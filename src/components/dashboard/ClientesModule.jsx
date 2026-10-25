@@ -113,7 +113,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
   const [showNewClientModal, setShowNewClientModal] = useState(false);
 
   // Estados del formulario de Abono
-  const [abonoCurrency, setAbonoCurrency] = useState('USD'); // 'USD' | 'VES'
+  const [abonoCurrency, setAbonoCurrency] = useState('USD');
   const [abonoAmount, setAbonoAmount] = useState('');
   const [abonoMethod, setAbonoMethod] = useState('Pago Móvil (BCV)');
   const [abonoNote, setAbonoNote] = useState('');
@@ -137,7 +137,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // 1. REGISTRAR ABONO (PAGO PARCIAL O TOTAL)
+  // 1. REGISTRAR ABONO
   const handleConfirmAbono = (e) => {
     e.preventDefault();
     if (!clientForAbono || !abonoAmount) return;
@@ -145,7 +145,6 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     const rawVal = parseFloat(abonoAmount) || 0;
     if (rawVal <= 0) return;
 
-    // Convertir a USD si fue ingresado en Bs
     const amountInUsd = abonoCurrency === 'USD' 
       ? rawVal 
       : (rawVal / (bcvRate || 1));
@@ -185,7 +184,6 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
 
     setClients(updatedClients);
 
-    // Preparar el recibo para compartir por WhatsApp
     const receiptData = {
       clientName: client.name,
       clientPhone: client.phone,
@@ -202,7 +200,6 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     setAbonoAmount('');
     setAbonoNote('');
 
-    // Si la libreta estaba abierta, refrescarla
     if (selectedClientForPassbook && selectedClientForPassbook.id === client.id) {
       setSelectedClientForPassbook({
         ...client,
@@ -215,7 +212,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     showToast(`¡Abono de $${amountInUsd.toFixed(2)} registrado para ${client.name}!`);
   };
 
-  // 2. ANOTAR FIADO RÁPIDO ("SUMAR A LA CUENTA")
+  // 2. ANOTAR FIADO RÁPIDO
   const handleConfirmFiado = (e) => {
     e.preventDefault();
     if (!clientForFiado || !fiadoAmount) return;
@@ -273,7 +270,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     showToast(`Se anotaron $${amountInUsd.toFixed(2)} a la libreta de ${client.name}`);
   };
 
-  // 3. REGISTRAR NUEVO CLIENTE / VECINO
+  // 3. NUEVO CLIENTE
   const handleCreateClient = (e) => {
     e.preventDefault();
     if (!newName.trim()) return;
@@ -318,7 +315,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     showToast(`Cliente ${newClient.name} agregado a la libreta.`);
   };
 
-  // 4. GENERADORES DE WHATSAPP
+  // 4. WHATSAPP
   const sendWhatsappReminder = (client) => {
     const debtBs = (client.debtUsd * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const msg = `Hola estimado/a ${client.name}, le saludamos cordialmente de la bodega. Le recordamos su saldo pendiente en la cuenta de $${client.debtUsd.toFixed(2)} USD (equivalente a Bs. ${debtBs} a la tasa oficial BCV de hoy). ¡Muchas gracias por su preferencia!`;
@@ -355,7 +352,6 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     window.open(`https://wa.me/${client.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  // Métricas rápidas
   const totalDebtUsd = clients.reduce((sum, c) => sum + c.debtUsd, 0);
   const totalClientsWithDebt = clients.filter(c => c.debtUsd > 0).length;
 
@@ -370,33 +366,33 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       
       {/* Toast Notificación */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 bg-neutral-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs border border-neutral-800 animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs border border-slate-800 animate-in fade-in slide-in-from-bottom-2">
           <Check className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Cabecera Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-neutral-200/90 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/95 backdrop-blur-xs p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-neutral-950">Sistema de Fiado & Libreta de Bodega</h2>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
-              Historial de Abonos
+            <h2 className="text-base font-extrabold text-slate-900">Directorio de Clientes</h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+              Libreta de Fiado
             </span>
           </div>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            Lleva el control exacto de quién te debe, cuánto ha ido abonando y manda recibos claros por WhatsApp
+          <p className="text-xs text-slate-500 mt-0.5">
+            Gestión de clientes, cuentas por cobrar, libreta de fiado con abonos parciales y comprobantes de WhatsApp
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowNewClientModal(true)}
-            className="px-4 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0 shadow-2xs"
+            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 shrink-0"
           >
             <UserPlus className="w-4 h-4" />
-            <span>Nuevo Vecino / Cliente</span>
+            <span>Nuevo Cliente</span>
           </button>
         </div>
       </div>
@@ -405,44 +401,48 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
         {/* Total Fiado en la Calle */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-neutral-200/90 shadow-2xs">
+        <div className="bg-gradient-to-br from-amber-500/10 via-white to-white p-5 rounded-3xl border border-amber-200/90 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-neutral-500">Total Fiado en Calle (Por cobrar)</span>
-            <Wallet className="w-4 h-4 text-neutral-400" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Fiado en Calle (Por cobrar)</span>
+            <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+              <Wallet className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-mono font-bold text-neutral-950 mt-1.5">
-            ${totalDebtUsd.toFixed(2)} <span className="text-xs font-normal text-neutral-400">USD</span>
+          <div className="text-3xl font-mono font-extrabold text-slate-900 mt-1.5">
+            ${totalDebtUsd.toFixed(2)} <span className="text-xs font-bold text-slate-400">USD</span>
           </div>
-          <div className="text-xs font-mono text-emerald-700 font-semibold mt-0.5">
+          <div className="text-xs font-mono text-emerald-800 font-bold mt-1">
             Bs. {(totalDebtUsd * bcvRate).toLocaleString('es-VE', { maximumFractionDigits: 2 })} VES (Tasa BCV)
           </div>
         </div>
 
         {/* Clientes con cuenta abierta */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-neutral-200/90 shadow-2xs">
+        <div className="bg-white/95 backdrop-blur-xs p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-neutral-500">Cuentas con Deuda Activa</span>
-            <Users className="w-4 h-4 text-neutral-400" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Cuentas con Deuda Activa</span>
+            <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center">
+              <Users className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-mono font-bold text-neutral-950 mt-1.5">
-            {totalClientsWithDebt} <span className="text-xs font-normal text-neutral-400">vecinos debiendo</span>
+          <div className="text-3xl font-mono font-extrabold text-slate-900 mt-1.5">
+            {totalClientsWithDebt} <span className="text-xs font-normal text-slate-400">clientes con deuda</span>
           </div>
-          <div className="text-xs text-neutral-500 mt-0.5">
-            De un total de {clients.length} clientes registrados
+          <div className="text-xs text-slate-500 font-medium mt-1">
+            De un total de {clients.length} clientes registrados en libreta
           </div>
         </div>
 
         {/* Tasa Oficial de Cobro */}
-        <div className="bg-neutral-950 text-white p-4 sm:p-5 rounded-2xl shadow-xs">
+        <div className="bg-gradient-to-br from-blue-500/10 via-white to-white p-5 rounded-3xl border border-blue-200/90 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-neutral-400">Tasa de Conversión Oficial</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Tasa Oficial de Cobro</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
           </div>
-          <div className="text-2xl font-mono font-bold text-white mt-1.5">
+          <div className="text-3xl font-mono font-extrabold text-blue-950 mt-1.5">
             Bs. {bcvRate.toFixed(2)}
           </div>
-          <div className="text-[11px] text-neutral-400 mt-0.5">
-            Los abonos en Bolívares se descuentan a esta tasa
+          <div className="text-[11px] text-slate-500 font-medium mt-1">
+            Los abonos en Bolívares se descuentan a esta tasa oficial
           </div>
         </div>
 
@@ -450,7 +450,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
 
       {/* Alerta de último recibo generado listo para WhatsApp */}
       {lastAbonoReceipt && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950 shadow-2xs">
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950 shadow-2xs">
           <div className="flex items-center gap-2.5">
             <Receipt className="w-5 h-5 text-emerald-600 shrink-0" />
             <div>
@@ -466,7 +466,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => sendWhatsappReceipt(lastAbonoReceipt)}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>Enviar Recibo al WhatsApp</span>
@@ -484,34 +484,34 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
 
       {/* Buscador */}
       <div className="relative">
-        <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre, apodo (ej. Doña Carmen, Taller) o teléfono..."
-          className="w-full bg-white border border-neutral-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-950 shadow-2xs"
+          className="w-full bg-white border border-slate-300/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
         />
       </div>
 
       {/* Tabla Principal de Clientes y Libreta */}
-      <div className="bg-white rounded-2xl border border-neutral-200/90 overflow-hidden shadow-2xs">
+      <div className="bg-white/95 backdrop-blur-xs rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 text-[11px] font-semibold">
+            <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4">Vecino / Cliente</th>
-                <th className="py-3 px-4">Teléfono WhatsApp</th>
-                <th className="py-3 px-4">Saldo Deuda ($ USD)</th>
-                <th className="py-3 px-4">Equivalente en Bs (BCV)</th>
-                <th className="py-3 px-4">Estado</th>
-                <th className="py-3 px-4 text-right">Operaciones de Fiado</th>
+                <th className="py-3.5 px-5">Cliente</th>
+                <th className="py-3.5 px-4">Teléfono WhatsApp</th>
+                <th className="py-3.5 px-4">Saldo Deuda ($ USD)</th>
+                <th className="py-3.5 px-4">Equivalente en Bs (BCV)</th>
+                <th className="py-3.5 px-4">Estado</th>
+                <th className="py-3.5 px-5 text-right">Operaciones de Fiado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-slate-100">
               {filteredClients.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-neutral-400">
+                  <td colSpan="6" className="py-8 text-center text-slate-400">
                     No se encontraron clientes con ese nombre o apodo.
                   </td>
                 </tr>
@@ -521,10 +521,10 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                   const recentCount = (client.history || []).length;
 
                   return (
-                    <tr key={client.id} className="hover:bg-neutral-50/70 transition-colors">
+                    <tr key={client.id} className="hover:bg-slate-50/80 transition-colors">
                       
                       {/* Cliente y Apodo */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-5">
                         <div className="flex items-center gap-2.5">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
                             hasDebt ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'
@@ -532,19 +532,19 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                             {client.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-bold text-neutral-950 flex items-center gap-1.5">
+                            <div className="font-bold text-slate-900 flex items-center gap-1.5">
                               <span>{client.name}</span>
                               {client.nickname && (
-                                <span className="text-[10px] text-neutral-500 font-normal">
+                                <span className="text-[10px] text-slate-500 font-normal">
                                   ({client.nickname})
                                 </span>
                               )}
                             </div>
                             <button
                               onClick={() => setSelectedClientForPassbook(client)}
-                              className="text-[10px] text-neutral-500 hover:text-neutral-950 font-medium flex items-center gap-1 mt-0.5"
+                              className="text-[10px] text-blue-600 hover:underline font-bold flex items-center gap-1 mt-0.5"
                             >
-                              <BookOpen className="w-3 h-3 text-neutral-400" />
+                              <BookOpen className="w-3 h-3" />
                               <span>Ver libreta ({recentCount} movs)</span>
                             </button>
                           </div>
@@ -552,28 +552,28 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                       </td>
 
                       {/* Teléfono */}
-                      <td className="py-3.5 px-4 font-mono text-neutral-600">
+                      <td className="py-3.5 px-4 font-mono text-slate-600">
                         {client.phone}
                       </td>
 
                       {/* Deuda USD */}
                       <td className="py-3.5 px-4 font-mono">
-                        <span className={`font-bold text-sm ${hasDebt ? 'text-amber-950' : 'text-neutral-400'}`}>
+                        <span className={`font-extrabold text-sm ${hasDebt ? 'text-amber-950' : 'text-slate-400'}`}>
                           ${client.debtUsd.toFixed(2)}
                         </span>
-                        <div className="text-[10px] text-neutral-400">
+                        <div className="text-[10px] text-slate-400">
                           Límite: ${client.creditLimit.toFixed(2)}
                         </div>
                       </td>
 
                       {/* Deuda en Bolívares */}
-                      <td className="py-3.5 px-4 font-mono text-neutral-700 font-medium">
+                      <td className="py-3.5 px-4 font-mono text-emerald-800 font-semibold">
                         {hasDebt ? (
-                          <span className="text-neutral-900 font-semibold">
+                          <span>
                             Bs. {(client.debtUsd * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         ) : (
-                          <span className="text-neutral-400">Bs. 0.00</span>
+                          <span className="text-slate-400">Bs. 0.00</span>
                         )}
                       </td>
 
@@ -581,23 +581,23 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                       <td className="py-3.5 px-4">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                           client.status === 'Solvente' 
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200/60'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                             : client.status === 'Vencido'
-                            ? 'bg-rose-50 text-rose-800 border-rose-200/60'
-                            : 'bg-amber-50 text-amber-800 border-amber-200/60'
+                            ? 'bg-rose-50 text-rose-800 border-rose-200'
+                            : 'bg-amber-50 text-amber-900 border-amber-200'
                         }`}>
                           {client.status}
                         </span>
                       </td>
 
                       {/* Acciones Rápidas */}
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           
                           {/* Botón Ver Libreta */}
                           <button
                             onClick={() => setSelectedClientForPassbook(client)}
-                            className="p-1.5 rounded-lg border border-neutral-200 hover:bg-neutral-100 text-neutral-700 transition-colors"
+                            className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors"
                             title="Abrir libreta del cliente"
                           >
                             <BookOpen className="w-3.5 h-3.5" />
@@ -606,7 +606,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                           {/* Botón Anotar Fiado (+) */}
                           <button
                             onClick={() => setClientForFiado(client)}
-                            className="px-2.5 py-1 bg-white hover:bg-neutral-100 text-neutral-900 border border-neutral-300 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1"
+                            className="px-2.5 py-1 bg-white hover:bg-amber-50 text-amber-950 border border-amber-300 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 shadow-2xs"
                             title="Anotar algo a su cuenta"
                           >
                             <Plus className="w-3 h-3 text-amber-600" />
@@ -617,7 +617,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                           {hasDebt && (
                             <button
                               onClick={() => setClientForAbono(client)}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 shadow-2xs"
+                              className="px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 shadow-2xs"
                               title="Registrar abono de dinero"
                             >
                               <ArrowDownLeft className="w-3 h-3" />
@@ -629,7 +629,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                           {hasDebt && (
                             <button
                               onClick={() => sendWhatsappReminder(client)}
-                              className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
+                              className="p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
                               title="Enviar recordatorio formal por WhatsApp"
                             >
                               <MessageCircle className="w-3.5 h-3.5" />
@@ -649,30 +649,30 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       </div>
 
       {/* ========================================================= */}
-      {/* MODAL 1: LA LIBRETA DIGITAL DEL CLIENTE (HISTORIAL DE ABONOS) */}
+      {/* MODAL 1: LA LIBRETA DIGITAL DEL CLIENTE (LIMPIA, SIN NEGRO) */}
       {/* ========================================================= */}
       {selectedClientForPassbook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-neutral-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div 
-            className="bg-white w-full max-w-2xl rounded-3xl border border-neutral-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className="bg-white w-full max-w-2xl rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Cabecera de la Libreta */}
-            <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between bg-neutral-50">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-neutral-950 text-white flex items-center justify-center font-bold text-sm">
-                  <BookOpen className="w-5 h-5 text-emerald-400" />
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-blue-500/20">
+                  <BookOpen className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-neutral-950">
+                    <h3 className="text-sm font-extrabold text-slate-900">
                       Libreta de Cuentas: {selectedClientForPassbook.name}
                     </h3>
-                    <span className="text-xs text-neutral-400 font-normal">
-                      {selectedClientForPassbook.nickname}
+                    <span className="text-xs text-slate-500 font-medium">
+                      ({selectedClientForPassbook.nickname})
                     </span>
                   </div>
-                  <div className="text-[11px] text-neutral-500 font-mono">
+                  <div className="text-[11px] text-slate-500 font-mono">
                     Teléfono: {selectedClientForPassbook.phone}
                   </div>
                 </div>
@@ -680,23 +680,23 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
 
               <button
                 onClick={() => setSelectedClientForPassbook(null)}
-                className="p-1.5 rounded-xl text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200 transition-colors"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Resumen del Saldo Actual del Cliente */}
-            <div className="p-5 bg-neutral-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Resumen del Saldo Actual del Cliente (LIMPIO Y CLARO, SIN FONDO NEGRO) */}
+            <div className="p-5 sm:p-6 bg-gradient-to-br from-emerald-50 via-teal-50/40 to-white border-y border-emerald-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-emerald-900/80 uppercase tracking-wider">
                   Saldo Adeudado a la Fecha:
                 </span>
-                <div className="text-3xl font-mono font-bold text-emerald-400 mt-0.5">
-                  ${selectedClientForPassbook.debtUsd.toFixed(2)} <span className="text-sm font-normal text-white">USD</span>
+                <div className="text-3xl font-mono font-extrabold text-emerald-950 mt-0.5">
+                  ${selectedClientForPassbook.debtUsd.toFixed(2)} <span className="text-sm font-bold text-emerald-800">USD</span>
                 </div>
-                <div className="text-xs text-neutral-300 font-mono mt-0.5">
-                  Equivale a: <strong>Bs. {(selectedClientForPassbook.debtUsd * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> (BCV: Bs. {bcvRate.toFixed(2)})
+                <div className="text-xs text-slate-600 font-mono mt-0.5 font-medium">
+                  Equivale a: <strong className="text-slate-900">Bs. {(selectedClientForPassbook.debtUsd * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> (BCV: Bs. {bcvRate.toFixed(2)})
                 </div>
               </div>
 
@@ -706,9 +706,9 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                   onClick={() => {
                     setClientForFiado(selectedClientForPassbook);
                   }}
-                  className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border border-neutral-700"
+                  className="px-3.5 py-2 bg-white hover:bg-amber-50 text-amber-950 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-amber-300 shadow-2xs"
                 >
-                  <Plus className="w-3.5 h-3.5 text-amber-400" />
+                  <Plus className="w-3.5 h-3.5 text-amber-600" />
                   <span>+ Anotar Fiado</span>
                 </button>
 
@@ -716,19 +716,19 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                   onClick={() => {
                     setClientForAbono(selectedClientForPassbook);
                   }}
-                  className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-neutral-950 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20"
                 >
-                  <ArrowDownLeft className="w-3.5 h-3.5 text-neutral-950" />
+                  <ArrowDownLeft className="w-3.5 h-3.5" />
                   <span>- Registrar Abono</span>
                 </button>
               </div>
             </div>
 
             {/* Historial detallado de movimientos (La Libreta Fiel) */}
-            <div className="p-5 overflow-y-auto flex-1 space-y-3">
-              <div className="flex items-center justify-between pb-1 border-b border-neutral-100">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
-                  <History className="w-3.5 h-3.5 text-neutral-400" />
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-3">
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <History className="w-3.5 h-3.5 text-slate-400" />
                   <span>Historial de Fiados y Pagos (Cronológico):</span>
                 </h4>
 
@@ -742,7 +742,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
               </div>
 
               {(!selectedClientForPassbook.history || selectedClientForPassbook.history.length === 0) ? (
-                <div className="py-8 text-center text-xs text-neutral-400">
+                <div className="py-8 text-center text-xs text-slate-400">
                   Este cliente no tiene movimientos registrados aún.
                 </div>
               ) : (
@@ -755,8 +755,8 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                         key={tx.id}
                         className={`p-3 rounded-2xl border transition-all ${
                           isAbono 
-                            ? 'bg-emerald-50/50 border-emerald-200/70' 
-                            : 'bg-white border-neutral-200'
+                            ? 'bg-emerald-50/50 border-emerald-200/80' 
+                            : 'bg-white border-slate-200'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -770,22 +770,22 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
 
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                  isAbono ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  isAbono ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-900 border-amber-300'
                                 }`}>
                                   {isAbono ? 'ABONÓ (-)' : 'FIÓ (+)'}
                                 </span>
-                                <span className="text-xs font-semibold text-neutral-900">
+                                <span className="text-xs font-bold text-slate-900">
                                   {tx.desc}
                                 </span>
                               </div>
 
-                              <div className="text-[11px] text-neutral-400 mt-1 flex items-center gap-2">
+                              <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2 font-medium">
                                 <span>{tx.date} • {tx.time}</span>
                                 {tx.paymentMethod && tx.paymentMethod !== '-' && (
                                   <>
                                     <span>•</span>
-                                    <span className="font-medium text-neutral-600">Método: {tx.paymentMethod}</span>
+                                    <span className="font-semibold text-slate-600">Método: {tx.paymentMethod}</span>
                                   </>
                                 )}
                               </div>
@@ -793,12 +793,12 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                           </div>
 
                           <div className="text-right shrink-0">
-                            <div className={`font-mono font-bold text-sm ${
-                              isAbono ? 'text-emerald-700' : 'text-neutral-900'
+                            <div className={`font-mono font-extrabold text-sm ${
+                              isAbono ? 'text-emerald-700' : 'text-slate-900'
                             }`}>
                               {isAbono ? '-' : '+'}${tx.amountUsd.toFixed(2)} USD
                             </div>
-                            <div className="text-[10px] font-mono text-neutral-400">
+                            <div className="text-[10px] font-mono text-slate-400">
                               Saldo tras mov: ${tx.balanceAfter.toFixed(2)}
                             </div>
                           </div>
@@ -812,13 +812,13 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
             </div>
 
             {/* Pie de la Libreta */}
-            <div className="px-5 py-3.5 bg-neutral-50 border-t border-neutral-100 flex items-center justify-between">
-              <span className="text-[11px] text-neutral-400">
-                Límite de fiado asignado: ${selectedClientForPassbook.creditLimit.toFixed(2)} USD
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500 font-medium">
+                Límite de fiado asignado: <strong>${selectedClientForPassbook.creditLimit.toFixed(2)} USD</strong>
               </span>
               <button
                 onClick={() => setSelectedClientForPassbook(null)}
-                className="px-4 py-2 bg-neutral-950 text-white rounded-xl text-xs font-semibold hover:bg-neutral-800"
+                className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20"
               >
                 Listo
               </button>
@@ -832,40 +832,40 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       {/* MODAL 2: REGISTRAR ABONO (PAGO DE DINERO) */}
       {/* ========================================================= */}
       {clientForAbono && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-neutral-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div 
-            className="bg-white w-full max-w-md rounded-3xl border border-neutral-200 shadow-2xl overflow-hidden"
+            className="bg-white w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <form onSubmit={handleConfirmAbono}>
-              <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between bg-emerald-50/50">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-emerald-50/50">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
                     <ArrowDownLeft className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-neutral-950">Registrar Abono</h3>
-                    <p className="text-[11px] text-neutral-500">Cliente: <strong>{clientForAbono.name}</strong></p>
+                    <h3 className="text-sm font-extrabold text-slate-900">Registrar Abono</h3>
+                    <p className="text-[11px] text-slate-500">Cliente: <strong>{clientForAbono.name}</strong></p>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setClientForAbono(null)}
-                  className="p-1 rounded-lg text-neutral-400 hover:text-neutral-900"
+                  className="p-1 rounded-xl text-slate-400 hover:text-slate-900"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-5 space-y-4 text-xs">
+              <div className="p-6 space-y-4 text-xs">
                 
                 {/* Deuda actual */}
-                <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-between">
-                  <span className="text-neutral-500 font-medium">Deuda actual en libreta:</span>
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                  <span className="text-slate-600 font-bold">Deuda actual en libreta:</span>
                   <div className="text-right">
-                    <div className="font-mono font-bold text-base text-neutral-950">${clientForAbono.debtUsd.toFixed(2)} USD</div>
-                    <div className="text-[10px] text-neutral-400 font-mono">
+                    <div className="font-mono font-extrabold text-base text-slate-900">${clientForAbono.debtUsd.toFixed(2)} USD</div>
+                    <div className="text-[10px] text-slate-500 font-mono font-medium">
                       Bs. {(clientForAbono.debtUsd * bcvRate).toLocaleString('es-VE', { maximumFractionDigits: 2 })} (BCV)
                     </div>
                   </div>
@@ -874,19 +874,19 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                 {/* Moneda y Monto del Abono */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="font-bold text-neutral-700">Monto del Abono:</label>
-                    <div className="flex rounded-lg border border-neutral-200 bg-white p-0.5 text-[10px] font-bold">
+                    <label className="font-bold text-slate-700">Monto del Abono:</label>
+                    <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-[10px] font-bold">
                       <button
                         type="button"
                         onClick={() => setAbonoCurrency('USD')}
-                        className={`px-2 py-0.5 rounded-md ${abonoCurrency === 'USD' ? 'bg-neutral-950 text-white' : 'text-neutral-600'}`}
+                        className={`px-2 py-0.5 rounded-md ${abonoCurrency === 'USD' ? 'bg-blue-600 text-white' : 'text-slate-600'}`}
                       >
                         $ USD
                       </button>
                       <button
                         type="button"
                         onClick={() => setAbonoCurrency('VES')}
-                        className={`px-2 py-0.5 rounded-md ${abonoCurrency === 'VES' ? 'bg-neutral-950 text-white' : 'text-neutral-600'}`}
+                        className={`px-2 py-0.5 rounded-md ${abonoCurrency === 'VES' ? 'bg-blue-600 text-white' : 'text-slate-600'}`}
                       >
                         Bs. VES
                       </button>
@@ -902,9 +902,9 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                       value={abonoAmount}
                       onChange={(e) => setAbonoAmount(e.target.value)}
                       placeholder="0.00"
-                      className="w-full bg-white border border-neutral-300 rounded-xl px-4 py-2.5 text-lg font-mono font-bold text-neutral-950 focus:outline-none focus:border-neutral-950"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-lg font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
                     />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-bold text-neutral-400">
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">
                       {abonoCurrency}
                     </span>
                   </div>
@@ -920,7 +920,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                           setAbonoAmount((clientForAbono.debtUsd * bcvRate).toFixed(2));
                         }
                       }}
-                      className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold underline"
+                      className="text-[11px] text-emerald-700 hover:text-emerald-800 font-bold underline"
                     >
                       Pagar deuda total (${clientForAbono.debtUsd.toFixed(2)})
                     </button>
@@ -929,13 +929,13 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
 
                 {/* Método de pago */}
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Método con el que abonó:</label>
+                  <label className="font-bold text-slate-700 block mb-1">Método con el que abonó:</label>
                   <select
                     value={abonoMethod}
                     onChange={(e) => setAbonoMethod(e.target.value)}
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-xs text-neutral-900 focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   >
-                    <option value="Pago Móvil (BCV)">Pago Móvil (Tasa BCV)</option>
+                    <option value="Pago Móvil (BCV)">Pago Móvil (Tasa Oficial BCV)</option>
                     <option value="Efectivo Divisas ($ USD)">Efectivo Divisas ($ USD)</option>
                     <option value="Efectivo Bolívares">Efectivo Bolívares (Bs)</option>
                     <option value="Punto de Venta Débito">Punto de Venta Débito</option>
@@ -945,29 +945,29 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
 
                 {/* Nota o Concepto */}
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Nota / Concepto (Opcional):</label>
+                  <label className="font-bold text-slate-700 block mb-1">Nota / Detalle (Opcional):</label>
                   <input
                     type="text"
                     value={abonoNote}
                     onChange={(e) => setAbonoNote(e.target.value)}
-                    placeholder="Ej. Abono quincena, dejó 5$ con el hijo..."
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-xs text-neutral-900 focus:outline-none focus:border-neutral-950"
+                    placeholder="Ej. Abono quincena, dejó $5 con el hijo..."
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
 
               </div>
 
-              <div className="px-5 py-3.5 bg-neutral-50 border-t border-neutral-100 flex items-center justify-end gap-2">
+              <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setClientForAbono(null)}
-                  className="px-3.5 py-2 border border-neutral-300 rounded-xl text-neutral-700 font-semibold text-xs hover:bg-neutral-100"
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold text-xs hover:bg-slate-100"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/20"
                 >
                   Guardar Abono
                 </button>
@@ -978,39 +978,39 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       )}
 
       {/* ========================================================= */}
-      {/* MODAL 3: ANOTAR FIADO RÁPIDO ("SUMAR AL SALDO") */}
+      {/* MODAL 3: ANOTAR FIADO RÁPIDO */}
       {/* ========================================================= */}
       {clientForFiado && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-neutral-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div 
-            className="bg-white w-full max-w-md rounded-3xl border border-neutral-200 shadow-2xl overflow-hidden"
+            className="bg-white w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <form onSubmit={handleConfirmFiado}>
-              <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between bg-amber-50/50">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50/50">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
                     <Plus className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-neutral-950">Anotar Fiado a la Cuenta</h3>
-                    <p className="text-[11px] text-neutral-500">Cliente: <strong>{clientForFiado.name}</strong></p>
+                    <h3 className="text-sm font-extrabold text-slate-900">Anotar Fiado a la Cuenta</h3>
+                    <p className="text-[11px] text-slate-500">Cliente: <strong>{clientForFiado.name}</strong></p>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setClientForFiado(null)}
-                  className="p-1 rounded-lg text-neutral-400 hover:text-neutral-900"
+                  className="p-1 rounded-xl text-slate-400 hover:text-slate-900"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-5 space-y-4 text-xs">
+              <div className="p-6 space-y-4 text-xs">
                 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
+                  <label className="font-bold text-slate-700 block mb-1">
                     ¿Qué se llevó fiado? (Productos o concepto):
                   </label>
                   <input
@@ -1020,16 +1020,16 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                     value={fiadoDesc}
                     onChange={(e) => setFiadoDesc(e.target.value)}
                     placeholder="Ej. 1 Harina PAN + 1 Mantequilla + 1 Arroz"
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-xs text-neutral-900 focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
+                  <label className="font-bold text-slate-700 block mb-1">
                     Monto total a cargar ($ USD):
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-neutral-400">$</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">$</span>
                     <input
                       type="number"
                       step="0.01"
@@ -1037,34 +1037,34 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                       value={fiadoAmount}
                       onChange={(e) => setFiadoAmount(e.target.value)}
                       placeholder="0.00"
-                      className="w-full bg-white border border-neutral-300 rounded-xl pl-7 pr-3 py-2.5 text-base font-mono font-bold text-neutral-950 focus:outline-none focus:border-neutral-950"
+                      className="w-full bg-white border border-slate-300 rounded-xl pl-8 pr-3.5 py-2.5 text-base font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                     />
                   </div>
-                  <div className="text-[10px] text-neutral-400 font-mono mt-1">
-                    Equivale a Bs. {((parseFloat(fiadoAmount) || 0) * bcvRate).toLocaleString('es-VE', { maximumFractionDigits: 2 })} a tasa BCV
+                  <div className="text-[10px] text-slate-500 font-mono mt-1 font-medium">
+                    Equivale a: <strong className="text-slate-800">Bs. {((parseFloat(fiadoAmount) || 0) * bcvRate).toLocaleString('es-VE', { maximumFractionDigits: 2 })}</strong> al BCV
                   </div>
                 </div>
 
-                <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-[11px] text-neutral-600">
+                <div className="p-3 bg-amber-50/60 rounded-2xl border border-amber-200/80 text-[11px] text-amber-950 font-medium">
                   Deuda actual: <strong>${clientForFiado.debtUsd.toFixed(2)}</strong> ➔ Nueva deuda estimada:{' '}
-                  <strong className="text-amber-950 font-mono font-bold">
+                  <strong className="text-amber-950 font-mono font-extrabold text-xs">
                     ${(clientForFiado.debtUsd + (parseFloat(fiadoAmount) || 0)).toFixed(2)} USD
                   </strong>
                 </div>
 
               </div>
 
-              <div className="px-5 py-3.5 bg-neutral-50 border-t border-neutral-100 flex items-center justify-end gap-2">
+              <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setClientForFiado(null)}
-                  className="px-3.5 py-2 border border-neutral-300 rounded-xl text-neutral-700 font-semibold text-xs hover:bg-neutral-100"
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold text-xs hover:bg-slate-100"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs"
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-amber-500/20"
                 >
                   Sumar a la Libreta
                 </button>
@@ -1075,39 +1075,39 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       )}
 
       {/* ========================================================= */}
-      {/* MODAL 4: NUEVO VECINO / CLIENTE */}
+      {/* MODAL 4: NUEVO CLIENTE */}
       {/* ========================================================= */}
       {showNewClientModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-neutral-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div 
-            className="bg-white w-full max-w-md rounded-3xl border border-neutral-200 shadow-2xl overflow-hidden"
+            className="bg-white w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <form onSubmit={handleCreateClient}>
-              <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between bg-neutral-50">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-neutral-950 text-white flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
                     <UserPlus className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-neutral-950">Nuevo Vecino / Cliente</h3>
-                    <p className="text-[11px] text-neutral-500">Agrega a un cliente a la libreta de la bodega</p>
+                    <h3 className="text-sm font-extrabold text-slate-900">Nuevo Cliente</h3>
+                    <p className="text-[11px] text-slate-500">Agrega un nuevo cliente al directorio y libreta de fiado</p>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setShowNewClientModal(false)}
-                  className="p-1 rounded-lg text-neutral-400 hover:text-neutral-900"
+                  className="p-1 rounded-xl text-slate-400 hover:text-slate-900"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-5 space-y-3.5 text-xs">
+              <div className="p-6 space-y-3.5 text-xs">
                 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Nombre Completo:</label>
+                  <label className="font-bold text-slate-700 block mb-1">Nombre Completo:</label>
                   <input
                     type="text"
                     required
@@ -1115,73 +1115,73 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="Ej. Roberto Gómez"
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-xs text-neutral-900 focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Apodo o Referencia:</label>
+                  <label className="font-bold text-slate-700 block mb-1">Apodo o Referencia:</label>
                   <input
                     type="text"
                     value={newNickname}
                     onChange={(e) => setNewNickname(e.target.value)}
                     placeholder="Ej. Doña Carmen piso 2, El Mecánico..."
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-xs text-neutral-900 focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Número de WhatsApp (con código):</label>
+                  <label className="font-bold text-slate-700 block mb-1">Número de WhatsApp (con código):</label>
                   <input
                     type="text"
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
                     placeholder="+58 412 1234567"
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-xs text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="font-bold text-neutral-700 block mb-1">Límite de Fiado ($ USD):</label>
+                    <label className="font-bold text-slate-700 block mb-1">Límite de Fiado ($ USD):</label>
                     <input
                       type="number"
                       step="1"
                       value={newCreditLimit}
                       onChange={(e) => setNewCreditLimit(e.target.value)}
                       placeholder="50"
-                      className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-xs text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                     />
                   </div>
 
                   <div>
-                    <label className="font-bold text-neutral-700 block mb-1">Deuda Inicial ($ USD):</label>
+                    <label className="font-bold text-slate-700 block mb-1">Deuda Inicial ($ USD):</label>
                     <input
                       type="number"
                       step="0.01"
                       value={newInitialDebt}
                       onChange={(e) => setNewInitialDebt(e.target.value)}
                       placeholder="0.00"
-                      className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-xs text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                     />
                   </div>
                 </div>
 
               </div>
 
-              <div className="px-5 py-3.5 bg-neutral-50 border-t border-neutral-100 flex items-center justify-end gap-2">
+              <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowNewClientModal(false)}
-                  className="px-3.5 py-2 border border-neutral-300 rounded-xl text-neutral-700 font-semibold text-xs hover:bg-neutral-100"
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold text-xs hover:bg-slate-100"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20"
                 >
-                  Guardar Vecino
+                  Guardar Cliente
                 </button>
               </div>
             </form>

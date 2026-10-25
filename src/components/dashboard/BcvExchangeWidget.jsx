@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, DollarSign, TrendingUp, ArrowRightLeft, Clock, ShieldCheck } from 'lucide-react';
+import { RefreshCw, DollarSign, TrendingUp, ArrowRightLeft, Clock, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function BcvExchangeWidget({ onRatesUpdated }) {
   const [rates, setRates] = useState({
@@ -71,25 +71,27 @@ export default function BcvExchangeWidget({ onRatesUpdated }) {
   };
 
   return (
-    <div className="bg-white border border-neutral-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
+    <div className="bg-white/95 backdrop-blur-xs border border-slate-200/80 rounded-3xl p-5 shadow-xs hover:shadow-sm transition-shadow">
       
       {/* Top Header of the Widget */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-neutral-100 gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-900 flex items-center gap-1.5">
-            <span>Tasas Oficiales & Mercado (Venezuela)</span>
-            <span className="text-[10px] text-neutral-400 font-normal font-mono">• API en vivo</span>
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+            <span>Tasas Oficiales & Mercado Venezuela</span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-mono">
+              En Vivo
+            </span>
           </h2>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-neutral-500">
-          <Clock className="w-3.5 h-3.5 text-neutral-400" />
-          <span className="text-[11px] font-mono">{rates.lastUpdate}</span>
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <Clock className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-[11px] font-mono text-slate-600">{rates.lastUpdate}</span>
           <button
             onClick={fetchRates}
             disabled={rates.loading}
-            className="p-1 rounded-md hover:bg-neutral-100 text-neutral-600 hover:text-neutral-950 transition-colors disabled:opacity-40"
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors disabled:opacity-40"
             title="Actualizar tasas ahora"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${rates.loading ? 'animate-spin' : ''}`} />
@@ -97,81 +99,84 @@ export default function BcvExchangeWidget({ onRatesUpdated }) {
         </div>
       </div>
 
-      {/* 3 KPI Rate Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-4">
+      {/* 3 KPI Rate Cards con Sutiles Degradados y Acentos Vivos */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 my-4">
         
         {/* Dólar BCV */}
-        <div className="p-3.5 rounded-xl border border-neutral-200/90 bg-neutral-50/60 hover:bg-neutral-50 transition-colors">
-          <div className="flex justify-between items-center text-[11px] text-neutral-500 font-medium">
-            <span>Dólar BCV Oficial</span>
-            <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
-              BCV
+        <div className="group relative overflow-hidden p-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 hover:border-emerald-400/90 hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-200">
+          <div className="flex justify-between items-center text-[11px] text-slate-600 font-medium">
+            <span className="font-semibold text-emerald-950">Dólar BCV Oficial</span>
+            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-300/60 shadow-2xs">
+              OFICIAL
             </span>
           </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-950 font-mono">
+          <div className="mt-1.5 flex items-baseline gap-1">
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-950 font-mono">
               Bs. {rates.dolarBcv.toFixed(2)}
             </span>
           </div>
-          <div className="text-[10px] text-neutral-400 mt-1">
-            1 USD = {rates.dolarBcv.toFixed(2)} VES
+          <div className="text-[11px] text-emerald-700/80 mt-1 flex items-center gap-1 font-medium">
+            <span>1 USD = {rates.dolarBcv.toFixed(2)} VES</span>
           </div>
         </div>
 
         {/* Euro BCV */}
-        <div className="p-3.5 rounded-xl border border-neutral-200/90 bg-neutral-50/60 hover:bg-neutral-50 transition-colors">
-          <div className="flex justify-between items-center text-[11px] text-neutral-500 font-medium">
-            <span>Euro Oficial</span>
-            <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60">
-              BCV EUR
+        <div className="group relative overflow-hidden p-4 rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50/70 via-white to-indigo-50/30 hover:border-blue-400/90 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-200">
+          <div className="flex justify-between items-center text-[11px] text-slate-600 font-medium">
+            <span className="font-semibold text-blue-950">Euro BCV</span>
+            <span className="text-[10px] font-bold text-blue-800 bg-blue-100/80 px-2 py-0.5 rounded-full border border-blue-300/60 shadow-2xs">
+              EUR BCV
             </span>
           </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-950 font-mono">
+          <div className="mt-1.5 flex items-baseline gap-1">
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-blue-950 font-mono">
               Bs. {rates.euroBcv.toFixed(2)}
             </span>
           </div>
-          <div className="text-[10px] text-neutral-400 mt-1">
-            1 EUR = {rates.euroBcv.toFixed(2)} VES
+          <div className="text-[11px] text-blue-700/80 mt-1 flex items-center gap-1 font-medium">
+            <span>1 EUR = {rates.euroBcv.toFixed(2)} VES</span>
           </div>
         </div>
 
         {/* USDT / Paralelo */}
-        <div className="p-3.5 rounded-xl border border-neutral-200/90 bg-neutral-50/60 hover:bg-neutral-50 transition-colors">
-          <div className="flex justify-between items-center text-[11px] text-neutral-500 font-medium">
-            <span>USDT (Binance P2P / Mercado)</span>
-            <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200/60">
-              P2P
+        <div className="group relative overflow-hidden p-4 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/70 via-white to-orange-50/30 hover:border-amber-400/90 hover:shadow-md hover:shadow-amber-500/5 transition-all duration-200">
+          <div className="flex justify-between items-center text-[11px] text-slate-600 font-medium">
+            <span className="font-semibold text-amber-950">USDT / P2P Binance</span>
+            <span className="text-[10px] font-bold text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300/60 shadow-2xs">
+              MERCADO
             </span>
           </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-950 font-mono">
+          <div className="mt-1.5 flex items-baseline gap-1">
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-amber-950 font-mono">
               Bs. {rates.usdt.toFixed(2)}
             </span>
           </div>
-          <div className="text-[10px] text-neutral-400 mt-1">
-            Spread vs BCV: +{(((rates.usdt - rates.dolarBcv) / rates.dolarBcv) * 100).toFixed(1)}%
+          <div className="text-[11px] text-amber-800/90 mt-1 flex items-center gap-1 font-medium">
+            <span>Brecha: +{(((rates.usdt - rates.dolarBcv) / rates.dolarBcv) * 100).toFixed(1)}% vs BCV</span>
           </div>
         </div>
 
       </div>
 
       {/* Mini Conversion Tool */}
-      <div className="pt-3 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-neutral-500 font-medium">Convertidor rápido:</span>
-          <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden bg-white">
+      <div className="pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <span className="text-slate-600 font-semibold flex items-center gap-1.5">
+            <ArrowRightLeft className="w-3.5 h-3.5 text-blue-600" />
+            <span>Convertidor instantáneo:</span>
+          </span>
+          <div className="flex items-center border border-slate-300/80 rounded-xl overflow-hidden bg-white shadow-2xs focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-500">
             <input
               type="number"
               value={convertAmount}
               onChange={(e) => setConvertAmount(e.target.value)}
-              className="w-20 px-2 py-1 text-xs text-neutral-900 focus:outline-none"
+              className="w-20 px-2.5 py-1.5 text-xs font-mono font-bold text-slate-900 focus:outline-none"
               placeholder="10"
             />
             <select
               value={convertCurrency}
               onChange={(e) => setConvertCurrency(e.target.value)}
-              className="bg-neutral-100 px-2 py-1 text-xs text-neutral-700 border-l border-neutral-300 font-semibold focus:outline-none"
+              className="bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 border-l border-slate-300/80 font-bold focus:outline-none"
             >
               <option value="USD">USD (BCV)</option>
               <option value="EUR">EUR (BCV)</option>
@@ -180,9 +185,9 @@ export default function BcvExchangeWidget({ onRatesUpdated }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 font-mono text-neutral-900 font-bold bg-neutral-100 px-3 py-1.5 rounded-lg w-full sm:w-auto justify-end">
-          <span className="text-[11px] font-sans font-normal text-neutral-500">Equivale a:</span>
-          <span>Bs. {calculateConversion()} VES</span>
+        <div className="flex items-center gap-2 font-mono text-slate-900 font-bold bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/60 px-4 py-2 rounded-xl w-full sm:w-auto justify-end shadow-2xs">
+          <span className="text-[11px] font-sans font-medium text-blue-700">Equivale a:</span>
+          <span className="text-sm font-extrabold text-blue-950">Bs. {calculateConversion()} VES</span>
         </div>
       </div>
 

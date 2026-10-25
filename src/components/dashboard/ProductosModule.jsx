@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, Plus, Search, Filter, QrCode } from 'lucide-react';
+import { Package, Plus, Search, Filter, QrCode, Sparkles, X, Tag } from 'lucide-react';
 
 export default function ProductosModule({ bcvRate = 884.75 }) {
   const [products, setProducts] = useState([
@@ -50,21 +50,34 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
     return matchSearch && matchCat;
   });
 
+  const getCategoryBadge = (cat) => {
+    switch (cat) {
+      case 'Abarrotes': return 'bg-blue-50 text-blue-800 border-blue-200';
+      case 'Bebidas': return 'bg-amber-50 text-amber-800 border-amber-200';
+      case 'Limpieza': return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+      case 'Charcutería': return 'bg-purple-50 text-purple-800 border-purple-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
+
   return (
     <div className="space-y-6">
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-neutral-200/90 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/95 backdrop-blur-xs p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-xs">
         <div>
-          <h2 className="text-base font-bold text-neutral-950">Catálogo Maestro de Productos</h2>
-          <p className="text-xs text-neutral-500">
-            Fijación de precios en USD con equivalencia automática en Bolívares (Tasa BCV oficial: <strong>Bs. {bcvRate.toFixed(2)}</strong>)
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-extrabold text-slate-900">Catálogo de Productos & Precios</h2>
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Fijación de precios en USD con equivalencia automática al BCV (Tasa Oficial: <strong>Bs. {bcvRate.toFixed(2)}</strong>)
           </p>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0 shadow-2xs"
+          className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo Producto</span>
@@ -74,13 +87,13 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
       {/* Filters and search */}
       <div className="flex flex-col sm:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre o código de barras (SKU)..."
-            className="w-full bg-white border border-neutral-200 rounded-xl pl-9 pr-3 py-2 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-950"
+            placeholder="Buscar por nombre de producto o código de barras (SKU)..."
+            className="w-full bg-white border border-slate-300/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
           />
         </div>
 
@@ -88,7 +101,7 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs text-neutral-700 font-semibold focus:outline-none w-full sm:w-auto"
+            className="bg-white border border-slate-300/80 rounded-2xl px-3.5 py-2.5 text-xs text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs w-full sm:w-auto"
           >
             <option value="Todas">Todas las categorías</option>
             <option value="Abarrotes">Abarrotes</option>
@@ -100,48 +113,54 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-2xl border border-neutral-200/90 overflow-hidden shadow-2xs">
+      <div className="bg-white/95 backdrop-blur-xs rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 text-[11px] font-semibold">
+            <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4">Producto</th>
-                <th className="py-3 px-4">Código (SKU)</th>
-                <th className="py-3 px-4">Categoría</th>
-                <th className="py-3 px-4">Costo USD</th>
-                <th className="py-3 px-4">PVP USD ($)</th>
-                <th className="py-3 px-4">PVP en Bs (Tasa BCV)</th>
-                <th className="py-3 px-4">Stock</th>
-                <th className="py-3 px-4 text-right">Margen</th>
+                <th className="py-3.5 px-5">Producto</th>
+                <th className="py-3.5 px-4">Código (SKU)</th>
+                <th className="py-3.5 px-4">Categoría</th>
+                <th className="py-3.5 px-4">Costo USD</th>
+                <th className="py-3.5 px-4">PVP USD ($)</th>
+                <th className="py-3.5 px-4">PVP en Bs (BCV)</th>
+                <th className="py-3.5 px-4">Stock</th>
+                <th className="py-3.5 px-5 text-right">Margen</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-slate-100">
               {filtered.map((item) => {
-                const margin = (((item.price - item.cost) / item.price) * 100).toFixed(0);
+                const margin = item.price > 0 ? (((item.price - item.cost) / item.price) * 100).toFixed(0) : 0;
                 const priceBs = (item.price * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const isLow = item.stock <= 10;
+
                 return (
-                  <tr key={item.id} className="hover:bg-neutral-50/60 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-neutral-950">{item.name}</td>
-                    <td className="py-3 px-4 font-mono text-neutral-400 text-[11px] flex items-center gap-1">
-                      <QrCode className="w-3.5 h-3.5 text-neutral-400" />
-                      <span>{item.sku}</span>
+                  <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3.5 px-5 font-bold text-slate-900">{item.name}</td>
+                    <td className="py-3.5 px-4 font-mono text-slate-400 text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <QrCode className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{item.sku}</span>
+                      </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <span className="bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded text-[10px] font-medium">
+                    <td className="py-3.5 px-4">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getCategoryBadge(item.category)}`}>
                         {item.category}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-mono text-neutral-500">${item.cost.toFixed(2)}</td>
-                    <td className="py-3 px-4 font-mono font-bold text-neutral-950">${item.price.toFixed(2)}</td>
-                    <td className="py-3 px-4 font-mono font-bold text-emerald-800 bg-emerald-50/40">
+                    <td className="py-3.5 px-4 font-mono text-slate-500">${item.cost.toFixed(2)}</td>
+                    <td className="py-3.5 px-4 font-mono font-extrabold text-slate-950 text-sm">${item.price.toFixed(2)}</td>
+                    <td className="py-3.5 px-4 font-mono font-bold text-emerald-800">
                       Bs. {priceBs}
                     </td>
-                    <td className="py-3 px-4 font-bold text-neutral-900">
-                      <span className={item.stock <= 10 ? 'text-amber-800' : 'text-neutral-900'}>
+                    <td className="py-3.5 px-4 font-bold">
+                      <span className={`px-2 py-0.5 rounded-lg text-xs font-mono font-bold ${
+                        isLow ? 'bg-amber-100 text-amber-900 border border-amber-300/80' : 'text-slate-800'
+                      }`}>
                         {item.stock} uds
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right font-mono text-neutral-600 font-semibold">
+                    <td className="py-3.5 px-5 text-right font-mono font-bold text-blue-700">
                       +{margin}%
                     </td>
                   </tr>
@@ -154,39 +173,58 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
 
       {/* Modal Nuevo Producto */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/40 backdrop-blur-xs">
-          <div className="bg-white border border-neutral-200 rounded-2xl p-6 max-w-md w-full relative shadow-xl text-xs space-y-3">
-            <h3 className="text-base font-bold text-neutral-950">Agregar Producto al Catálogo</h3>
-            <form onSubmit={handleAddProduct} className="space-y-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full relative shadow-2xl text-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                  <Package className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Agregar Producto al Catálogo</h3>
+                  <p className="text-[11px] text-slate-500">Crea un artículo y calcula el precio al BCV</p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowAddModal(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddProduct} className="space-y-3.5">
               <div>
-                <label className="block text-neutral-600 font-semibold mb-1">Nombre del Producto</label>
+                <label className="block text-slate-700 font-bold mb-1">Nombre del Producto:</label>
                 <input
                   type="text"
                   required
+                  autoFocus
                   placeholder="Ej. Leche Condensada 395g"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 focus:outline-none focus:border-neutral-950"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-neutral-600 font-semibold mb-1">Código de barras (SKU)</label>
+                  <label className="block text-slate-700 font-bold mb-1">Código de barras (SKU):</label>
                   <input
                     type="text"
                     placeholder="759..."
                     value={newSku}
                     onChange={(e) => setNewSku(e.target.value)}
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-neutral-600 font-semibold mb-1">Categoría</label>
+                  <label className="block text-slate-700 font-bold mb-1">Categoría:</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   >
                     <option value="Abarrotes">Abarrotes</option>
                     <option value="Bebidas">Bebidas</option>
@@ -197,20 +235,20 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2.5">
                 <div>
-                  <label className="block text-neutral-600 font-semibold mb-1">Costo ($ USD)</label>
+                  <label className="block text-slate-700 font-bold mb-1">Costo ($ USD):</label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="1.00"
                     value={newCost}
                     onChange={(e) => setNewCost(e.target.value)}
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-neutral-600 font-semibold mb-1">PVP ($ USD)</label>
+                  <label className="block text-slate-700 font-bold mb-1">PVP ($ USD):</label>
                   <input
                     type="number"
                     step="0.01"
@@ -218,38 +256,38 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
                     placeholder="1.50"
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-neutral-600 font-semibold mb-1">Stock Inicial</label>
+                  <label className="block text-slate-700 font-bold mb-1">Stock Inicial:</label>
                   <input
                     type="number"
                     placeholder="20"
                     value={newStock}
                     onChange={(e) => setNewStock(e.target.value)}
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
               </div>
 
               {newPrice && (
-                <div className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-200 text-[11px] text-neutral-600 font-mono">
-                  Precio calculado en Bolívares (BCV): <strong className="text-neutral-950">Bs. {(parseFloat(newPrice) * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</strong>
+                <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-[11px] text-emerald-950 font-mono">
+                  Precio de venta en Bolívares (BCV): <strong className="font-extrabold text-emerald-900">Bs. {(parseFloat(newPrice) * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</strong>
                 </div>
               )}
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-3 py-2 text-neutral-600 hover:text-neutral-950 font-semibold"
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl font-semibold"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md shadow-blue-500/20"
                 >
                   Guardar Producto
                 </button>

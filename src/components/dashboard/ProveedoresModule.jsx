@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Truck, Plus, Search, Phone, FileText } from 'lucide-react';
+import { Truck, Plus, Search, Phone, FileText, X, Building2 } from 'lucide-react';
 
 export default function ProveedoresModule({ bcvRate = 884.75 }) {
   const [suppliers, setSuppliers] = useState([
@@ -42,23 +42,28 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-neutral-200/90 shadow-2xs">
+      
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/95 backdrop-blur-xs p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-xs">
         <div>
-          <h2 className="text-base font-bold text-neutral-950">Directorio de Proveedores & Cuentas por Pagar</h2>
-          <p className="text-xs text-neutral-500">Gestión de distribuidores, plazos de crédito y compras pendientes</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-extrabold text-slate-900">Directorio de Proveedores & Cuentas por Pagar</h2>
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">Gestión de distribuidores de mercancía, plazos y compras a crédito</p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <div className="text-[10px] text-neutral-400 uppercase font-semibold">Total por pagar a distribuidores</div>
-            <div className="text-base font-bold font-mono text-neutral-950">
+            <div className="text-[10px] text-slate-400 uppercase font-bold">Por pagar a distribuidores:</div>
+            <div className="text-base font-extrabold font-mono text-slate-900">
               ${totalDebt.toFixed(2)} USD
             </div>
           </div>
 
           <button
             onClick={() => setShowModal(true)}
-            className="px-4 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0 shadow-2xs"
+            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Nuevo Proveedor</span>
@@ -66,51 +71,57 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
         </div>
       </div>
 
+      {/* Search */}
       <div className="relative">
-        <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por razón social o RIF..."
-          className="w-full bg-white border border-neutral-200 rounded-xl pl-9 pr-3 py-2 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-950"
+          placeholder="Buscar proveedor por razón social o RIF..."
+          className="w-full bg-white border border-slate-300/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
         />
       </div>
 
-      <div className="bg-white rounded-2xl border border-neutral-200/90 overflow-hidden shadow-2xs">
+      {/* Table */}
+      <div className="bg-white/95 backdrop-blur-xs rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 text-[11px] font-semibold">
+            <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4">Razón Social / RIF</th>
-                <th className="py-3 px-4">Contacto</th>
-                <th className="py-3 px-4">Teléfono</th>
-                <th className="py-3 px-4">Condición de pago</th>
-                <th className="py-3 px-4">Saldo Pendiente USD</th>
-                <th className="py-3 px-4">Saldo en Bs (Tasa BCV)</th>
+                <th className="py-3.5 px-5">Razón Social / RIF</th>
+                <th className="py-3.5 px-4">Contacto</th>
+                <th className="py-3.5 px-4">Teléfono</th>
+                <th className="py-3.5 px-4">Condición de Pago</th>
+                <th className="py-3.5 px-4">Saldo Pendiente USD</th>
+                <th className="py-3.5 px-5">Saldo en Bs (BCV)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-slate-100">
               {filtered.map((s) => (
-                <tr key={s.id} className="hover:bg-neutral-50/60 transition-colors">
-                  <td className="py-3 px-4">
-                    <span className="font-semibold text-neutral-950 block">{s.name}</span>
-                    <span className="text-[10px] text-neutral-400 font-mono">{s.rif}</span>
+                <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-5">
+                    <span className="font-bold text-slate-900 block">{s.name}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">{s.rif}</span>
                   </td>
-                  <td className="py-3 px-4 text-neutral-600">{s.contact}</td>
-                  <td className="py-3 px-4 font-mono text-neutral-500">{s.phone}</td>
-                  <td className="py-3 px-4">
-                    <span className="bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded text-[10px] font-medium">
+                  <td className="py-3.5 px-4 text-slate-600 font-medium">{s.contact}</td>
+                  <td className="py-3.5 px-4 font-mono text-slate-600">{s.phone}</td>
+                  <td className="py-3.5 px-4">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      s.creditTerms === 'Contado' 
+                        ? 'bg-slate-100 text-slate-700 border-slate-200' 
+                        : 'bg-amber-50 text-amber-900 border-amber-200'
+                    }`}>
                       {s.creditTerms}
                     </span>
                   </td>
-                  <td className="py-3 px-4 font-mono font-bold text-neutral-950">
-                    <span className={s.debtUsd > 0 ? 'text-amber-900' : 'text-neutral-400'}>
+                  <td className="py-3.5 px-4 font-mono font-extrabold text-slate-950 text-sm">
+                    <span className={s.debtUsd > 0 ? 'text-amber-950' : 'text-slate-400'}>
                       ${s.debtUsd.toFixed(2)}
                     </span>
                   </td>
-                  <td className="py-3 px-4 font-mono text-neutral-600">
-                    {s.debtUsd > 0 ? `Bs. ${(s.debtUsd * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}` : 'Bs. 0.00'}
+                  <td className="py-3.5 px-5 font-mono text-emerald-800 font-semibold">
+                    {s.debtUsd > 0 ? `Bs. ${(s.debtUsd * bcvRate).toLocaleString('es-VE', { maximumFractionDigits: 2 })}` : 'Bs. 0.00'}
                   </td>
                 </tr>
               ))}
@@ -119,56 +130,76 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
         </div>
       </div>
 
+      {/* Modal Nuevo Proveedor */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/40 backdrop-blur-xs">
-          <div className="bg-white border border-neutral-200 rounded-2xl p-6 max-w-sm w-full relative shadow-xl text-xs space-y-3">
-            <h3 className="text-base font-bold text-neutral-950">Nuevo Proveedor</h3>
-            <form onSubmit={handleAdd} className="space-y-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full relative shadow-2xl text-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Nuevo Proveedor</h3>
+                  <p className="text-[11px] text-slate-500">Agrega un distribuidor a tu agenda</p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowModal(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAdd} className="space-y-3.5">
               <div>
-                <label className="block text-neutral-600 font-semibold mb-1">Razón Social</label>
+                <label className="block text-slate-700 font-bold mb-1">Razón Social / Nombre Comercial:</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej. Distribuidora Central C.A."
+                  autoFocus
+                  placeholder="Ej. Distribuidora Santa Elena C.A."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 focus:outline-none focus:border-neutral-950"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
               <div>
-                <label className="block text-neutral-600 font-semibold mb-1">RIF</label>
+                <label className="block text-slate-700 font-bold mb-1">RIF de la Empresa:</label>
                 <input
                   type="text"
                   placeholder="J-12345678-9"
                   value={rif}
                   onChange={(e) => setRif(e.target.value)}
-                  className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
               <div>
-                <label className="block text-neutral-600 font-semibold mb-1">Teléfono</label>
+                <label className="block text-slate-700 font-bold mb-1">Teléfono del Preventista / Oficina:</label>
                 <input
                   type="text"
-                  placeholder="+58 212..."
+                  placeholder="+58 412 0000000"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-3 py-2 text-neutral-600 hover:text-neutral-950 font-semibold"
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl font-semibold"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md shadow-blue-500/20"
                 >
                   Guardar Proveedor
                 </button>
@@ -177,6 +208,7 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
           </div>
         </div>
       )}
+
     </div>
   );
 }

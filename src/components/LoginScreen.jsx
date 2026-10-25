@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function LoginScreen({ onLoginSuccess }) {
-  const [email, setEmail] = useState('admin@comercial.ve');
+  const [email, setEmail] = useState('admin@bodega.ve');
   const [password, setPassword] = useState('••••••••');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -13,44 +13,44 @@ export default function LoginScreen({ onLoginSuccess }) {
     setTimeout(() => {
       setLoading(false);
       onLoginSuccess();
-    }, 600);
+    }, 500);
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col justify-center items-center p-4">
-      <div className="w-full max-w-sm bg-white border border-neutral-200/90 rounded-2xl p-6 sm:p-8 shadow-xs">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center items-center p-4 selection:bg-blue-600 selection:text-white">
+      <div className="w-full max-w-sm bg-white/95 backdrop-blur-xs border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-md shadow-slate-200/50">
         
         {/* Brand */}
         <div className="mb-6 text-center">
-          <div className="w-10 h-10 rounded-xl bg-neutral-950 text-white font-bold flex items-center justify-center text-sm mx-auto mb-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 text-white font-extrabold flex items-center justify-center text-base mx-auto mb-3 shadow-md shadow-blue-500/25">
             360
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-neutral-950">
-            Optimus360 Web
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900">
+            Optimus360
           </h1>
-          <p className="text-xs text-neutral-500 mt-1">
-            Panel administrativo y terminal de ventas
+          <p className="text-xs text-slate-500 mt-1">
+            Control de Bodega, Libreta de Fiado & POS
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-neutral-700 mb-1.5">
-              Correo electrónico
+            <label className="block font-bold text-slate-700 mb-1.5">
+              Correo Electrónico
             </label>
             <input
               type="text"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-white border border-neutral-300 rounded-xl px-3.5 py-2.5 text-neutral-900 focus:outline-none focus:border-neutral-950"
+              className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
             />
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-1.5">
-              <label className="font-semibold text-neutral-700">Contraseña</label>
-              <a href="#" onClick={(e) => e.preventDefault()} className="text-[11px] text-neutral-400 hover:text-neutral-900">
+              <label className="font-bold text-slate-700">Contraseña</label>
+              <a href="#" onClick={(e) => e.preventDefault()} className="text-[11px] text-blue-600 hover:underline font-semibold">
                 ¿La olvidaste?
               </a>
             </div>
@@ -60,12 +60,12 @@ export default function LoginScreen({ onLoginSuccess }) {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white border border-neutral-300 rounded-xl px-3.5 py-2.5 text-neutral-900 pr-9 focus:outline-none focus:border-neutral-950"
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 pr-9 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 p-1"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
               >
                 {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
@@ -75,16 +75,16 @@ export default function LoginScreen({ onLoginSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-neutral-950 hover:bg-neutral-800 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 mt-2"
+            className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 flex items-center justify-center gap-2 mt-2"
           >
-            <span>{loading ? 'Accediendo...' : 'Iniciar Sesión'}</span>
+            <span>{loading ? 'Entrando a la caja...' : 'Iniciar Sesión'}</span>
             {!loading && <ArrowRight className="w-3.5 h-3.5" />}
           </button>
         </form>
 
-        <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center justify-center gap-1.5 text-[11px] text-neutral-400 text-center">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Acceso seguro protegido con cifrado TLS</span>
+        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 text-center">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Acceso seguro protegido y cifrado</span>
         </div>
 
       </div>

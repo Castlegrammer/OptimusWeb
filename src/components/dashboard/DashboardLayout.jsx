@@ -10,7 +10,7 @@ import ReportesModule from './ReportesModule';
 import ClientesModule from './ClientesModule';
 import ProveedoresModule from './ProveedoresModule';
 import ChangeCalculatorModal from './ChangeCalculatorModal';
-import { Menu, LogOut, Calculator } from 'lucide-react';
+import { Menu, LogOut, Calculator, Sparkles } from 'lucide-react';
 
 export default function DashboardLayout({ onLogout }) {
   const [currentModule, setCurrentModule] = useState('inicio');
@@ -65,12 +65,12 @@ export default function DashboardLayout({ onLogout }) {
     categorias: 'Familias & Categorías',
     inventario: 'Control de Inventario & Stock',
     reportes: 'Reportes & Cierre de Caja',
-    clientes: 'Libreta de Fiado & Cuentas por Cobrar',
+    clientes: 'Clientes & Libreta de Fiado',
     proveedores: 'Proveedores & Cuentas por Pagar',
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] text-neutral-900 flex font-sans antialiased selection:bg-neutral-900 selection:text-white">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex font-sans antialiased selection:bg-blue-600 selection:text-white">
       
       {/* 8-Module Sidebar Navigation */}
       <Sidebar
@@ -86,20 +86,22 @@ export default function DashboardLayout({ onLogout }) {
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">
         
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-neutral-200/90 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30">
+        <header className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="p-1.5 rounded-lg text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100 md:hidden"
+              className="p-2 rounded-xl text-slate-600 hover:text-slate-950 hover:bg-slate-100 md:hidden"
             >
               <Menu className="w-5 h-5" />
             </button>
 
             <div>
-              <div className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
-                Optimus360 Web / {currentModule}
+              <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <span>Optimus360 Bodega</span>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-400 capitalize">{currentModule}</span>
               </div>
-              <h1 className="text-sm font-bold text-neutral-950 tracking-tight">
+              <h1 className="text-sm font-extrabold text-slate-900 tracking-tight">
                 {moduleTitles[currentModule]}
               </h1>
             </div>
@@ -111,37 +113,37 @@ export default function DashboardLayout({ onLogout }) {
             {/* Botón Destacado: Calculadora de Vuelto Multitasa */}
             <button
               onClick={() => setShowCalculator(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-neutral-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 rounded-xl transition-all shadow-2xs"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl transition-all shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30"
               title="Abrir calculadora de vuelto con múltiples tasas"
             >
-              <Calculator className="w-3.5 h-3.5 text-emerald-700" />
-              <span className="hidden sm:inline">Calculadora de Vuelto</span>
+              <Calculator className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Calculadora Vuelto</span>
               <span className="sm:hidden">Vuelto</span>
             </button>
 
             {/* Pastilla de Tasa BCV */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-50 border border-neutral-200 text-xs font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-neutral-500 font-sans text-[11px]">BCV:</span>
-              <strong className="text-neutral-900">Bs. {bcvRate.toFixed(2)}</strong>
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-xs font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+              <span className="text-emerald-800 font-sans text-[11px] font-bold">BCV:</span>
+              <strong className="text-emerald-950 font-bold">Bs. {bcvRate.toFixed(2)}</strong>
             </div>
 
             {/* Pastilla USDT */}
-            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-neutral-50 border border-neutral-200 text-[11px] font-mono text-neutral-600">
-              <span className="text-neutral-400 font-sans">USDT:</span>
-              <strong>Bs. {rates.usdt.toFixed(2)}</strong>
+            <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-xs font-mono text-amber-950">
+              <span className="text-amber-800 font-sans text-[11px] font-bold">USDT:</span>
+              <strong className="font-bold">Bs. {rates.usdt.toFixed(2)}</strong>
             </div>
 
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-950 border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-950 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors"
               title="Cerrar sesión"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Salir</span>
             </button>
 
-            <div className="w-8 h-8 rounded-full bg-neutral-950 text-white text-xs font-bold flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white text-xs font-extrabold flex items-center justify-center shadow-md shadow-blue-500/20">
               360
             </div>
           </div>

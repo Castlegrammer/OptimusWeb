@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Search, Filter, Printer, Check, ArrowRight, Calculator } from 'lucide-react';
+import { 
+  ShoppingCart, 
+  Plus, 
+  Search, 
+  Filter, 
+  Printer, 
+  Check, 
+  ArrowRight, 
+  Calculator,
+  Receipt,
+  DollarSign,
+  CreditCard,
+  X
+} from 'lucide-react';
 
 export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
   const [salesList, setSalesList] = useState([
@@ -41,22 +54,35 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
     s.paymentMethod.toLowerCase().includes(search.toLowerCase())
   );
 
+  const getMethodBadgeClass = (method) => {
+    if (method.includes('Pago Móvil')) return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+    if (method.includes('Efectivo')) return 'bg-blue-50 text-blue-800 border-blue-200';
+    if (method.includes('USDT')) return 'bg-amber-50 text-amber-900 border-amber-200';
+    if (method.includes('Fiado')) return 'bg-orange-50 text-orange-800 border-orange-200';
+    return 'bg-purple-50 text-purple-800 border-purple-200';
+  };
+
   return (
     <div className="space-y-6">
       
       {/* Top Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-neutral-200/90 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/95 backdrop-blur-xs p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-xs">
         <div>
-          <h2 className="text-base font-bold text-neutral-950">Módulo de Ventas & Facturación</h2>
-          <p className="text-xs text-neutral-500">Emisión de tickets en mostrador y cobro multimoneda (USD / Bs al BCV)</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-extrabold text-slate-900">Ventas & Facturación (Caja POS)</h2>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Emisión de tickets de mostrador y cobro multimoneda (USD y Bolívares a tasa oficial BCV: <strong>Bs. {bcvRate.toFixed(2)}</strong>)
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {onOpenCalculator && (
             <button
               type="button"
               onClick={onOpenCalculator}
-              className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shrink-0 shadow-2xs"
+              className="px-3.5 py-2.5 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-950 border border-emerald-300/80 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs"
               title="Calcular vuelto a diferentes tasas"
             >
               <Calculator className="w-4 h-4 text-emerald-700" />
@@ -66,7 +92,7 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
 
           <button
             onClick={() => setShowNewSaleModal(true)}
-            className="px-4 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0 shadow-2xs"
+            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva Venta Rápida</span>
@@ -75,60 +101,64 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
       </div>
 
       {/* Filter and Search */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por ticket, cliente o método de pago..."
-            className="w-full bg-white border border-neutral-200 rounded-xl pl-9 pr-3 py-2 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-950"
-          />
-        </div>
+      <div className="relative">
+        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar venta por número de ticket, nombre de cliente o forma de pago..."
+          className="w-full bg-white border border-slate-300/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
+        />
       </div>
 
       {/* Sales Table */}
-      <div className="bg-white rounded-2xl border border-neutral-200/90 overflow-hidden shadow-2xs">
+      <div className="bg-white/95 backdrop-blur-xs rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 text-[11px] font-semibold">
+            <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4">Ticket / Fecha</th>
-                <th className="py-3 px-4">Cliente</th>
-                <th className="py-3 px-4">Método de pago</th>
-                <th className="py-3 px-4">Total USD</th>
-                <th className="py-3 px-4">Total Bs (Tasa BCV)</th>
-                <th className="py-3 px-4">Estado</th>
-                <th className="py-3 px-4 text-right">Acción</th>
+                <th className="py-3.5 px-5">Ticket / Fecha</th>
+                <th className="py-3.5 px-4">Cliente</th>
+                <th className="py-3.5 px-4">Método de Pago</th>
+                <th className="py-3.5 px-4">Monto ($ USD)</th>
+                <th className="py-3.5 px-4">Monto en Bs (BCV)</th>
+                <th className="py-3.5 px-4">Estado</th>
+                <th className="py-3.5 px-5 text-right">Comprobante</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-slate-100">
               {filtered.map((s) => (
-                <tr key={s.id} className="hover:bg-neutral-50/60 transition-colors">
-                  <td className="py-3 px-4">
-                    <span className="font-mono font-bold text-neutral-900 block">{s.id}</span>
-                    <span className="text-[10px] text-neutral-400">{s.date}</span>
+                <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-5">
+                    <span className="font-mono font-bold text-slate-900 block">{s.id}</span>
+                    <span className="text-[10px] text-slate-400">{s.date}</span>
                   </td>
-                  <td className="py-3 px-4 font-medium text-neutral-900">{s.client}</td>
-                  <td className="py-3 px-4 text-neutral-600">{s.paymentMethod}</td>
-                  <td className="py-3 px-4 font-mono font-bold text-neutral-950">${s.totalUsd.toFixed(2)}</td>
-                  <td className="py-3 px-4 font-mono text-neutral-600 font-medium">
+                  <td className="py-3.5 px-4 font-semibold text-slate-900">{s.client}</td>
+                  <td className="py-3.5 px-4">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getMethodBadgeClass(s.paymentMethod)}`}>
+                      {s.paymentMethod}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 font-mono font-bold text-slate-950 text-sm">
+                    ${s.totalUsd.toFixed(2)}
+                  </td>
+                  <td className="py-3.5 px-4 font-mono text-emerald-800 font-semibold">
                     Bs. {(s.totalUsd * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                  <td className="py-3.5 px-4">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                       s.status === 'Completado' 
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200/60' 
-                        : 'bg-amber-50 text-amber-800 border-amber-200/60'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                        : 'bg-amber-50 text-amber-800 border-amber-200'
                     }`}>
                       {s.status}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right">
+                  <td className="py-3.5 px-5 text-right">
                     <button 
-                      onClick={() => alert(`Imprimiendo ticket ${s.id}...`)}
-                      className="text-neutral-500 hover:text-neutral-950 p-1"
+                      onClick={() => alert(`Imprimiendo ticket térmico para ${s.id}...`)}
+                      className="p-1.5 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                       title="Imprimir ticket térmico"
                     >
                       <Printer className="w-3.5 h-3.5" />
@@ -143,67 +173,88 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
 
       {/* Modal Nueva Venta */}
       {showNewSaleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/40 backdrop-blur-xs">
-          <div className="bg-white border border-neutral-200 rounded-2xl p-6 max-w-md w-full relative shadow-xl">
-            <h3 className="text-base font-bold text-neutral-950 mb-3">Registrar Nueva Venta</h3>
-            <form onSubmit={handleCreateSale} className="space-y-3 text-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full relative shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                  <Receipt className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Registrar Venta Rápida</h3>
+                  <p className="text-[11px] text-slate-500">Cobro directo en caja de mostrador</p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowNewSaleModal(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSale} className="space-y-3.5 text-xs">
               <div>
-                <label className="block text-neutral-600 font-semibold mb-1">Nombre del Cliente</label>
+                <label className="block text-slate-700 font-bold mb-1">Nombre del Cliente:</label>
                 <input
                   type="text"
-                  placeholder="Ej. Consumidor Final / María Pérez"
+                  placeholder="Ej. Consumidor Final, María Pérez..."
                   value={newClient}
                   onChange={(e) => setNewClient(e.target.value)}
-                  className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 focus:outline-none focus:border-neutral-950"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
               <div>
-                <label className="block text-neutral-600 font-semibold mb-1">Monto en Dólares ($ USD)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  placeholder="25.00"
-                  value={newAmount}
-                  onChange={(e) => setNewAmount(e.target.value)}
-                  className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 font-mono focus:outline-none focus:border-neutral-950"
-                />
+                <label className="block text-slate-700 font-bold mb-1">Monto en Dólares ($ USD):</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="25.00"
+                    value={newAmount}
+                    onChange={(e) => setNewAmount(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-8 pr-3.5 py-2.5 text-slate-900 font-mono font-bold text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  />
+                </div>
                 {newAmount && (
-                  <div className="text-[11px] text-neutral-500 font-mono mt-1">
-                    Equivalente en Bolívares (Tasa BCV {bcvRate.toFixed(2)}): <strong className="text-neutral-950">Bs. {(parseFloat(newAmount || 0) * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</strong>
+                  <div className="text-[11px] text-slate-500 font-mono mt-1">
+                    Equivale a: <strong className="text-emerald-800 font-bold">Bs. {(parseFloat(newAmount || 0) * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</strong> al BCV
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-neutral-600 font-semibold mb-1">Método de Cobro</label>
+                <label className="block text-slate-700 font-bold mb-1">Método de Cobro:</label>
                 <select
                   value={newMethod}
                   onChange={(e) => setNewMethod(e.target.value)}
-                  className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-neutral-900 focus:outline-none focus:border-neutral-950"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 >
-                  <option value="Pago Móvil (BCV)">Pago Móvil (Tasa BCV)</option>
-                  <option value="Efectivo USD">Efectivo USD ($)</option>
+                  <option value="Pago Móvil (BCV)">Pago Móvil (Tasa Oficial BCV)</option>
+                  <option value="Efectivo USD">Efectivo Divisas ($ USD)</option>
                   <option value="Punto de Venta (Bs)">Punto de Venta Débito (Bs)</option>
-                  <option value="USDT Binance">USDT Binance / Cripto</option>
-                  <option value="Fiado (Crédito)">Fiado a Cliente (Cuenta por cobrar)</option>
+                  <option value="USDT Binance">USDT Binance / P2P</option>
+                  <option value="Fiado (Crédito)">Fiado a Libreta (Cuenta por cobrar)</option>
                 </select>
               </div>
 
-              <div className="pt-3 flex justify-end gap-2">
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowNewSaleModal(false)}
-                  className="px-3 py-2 text-neutral-600 hover:text-neutral-950 font-semibold"
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl font-semibold"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md shadow-blue-500/20"
                 >
-                  Confirmar y emitir ticket
+                  Cobrar y Emitir Ticket
                 </button>
               </div>
             </form>
