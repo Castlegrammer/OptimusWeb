@@ -10,10 +10,11 @@ import {
   Users, 
   Truck, 
   LogOut, 
-  X
+  X,
+  Calculator
 } from 'lucide-react';
 
-export default function Sidebar({ currentModule, onChangeModule, onLogout, mobileOpen, onCloseMobile }) {
+export default function Sidebar({ currentModule, onChangeModule, onLogout, mobileOpen, onCloseMobile, onOpenCalculator }) {
   const modules = [
     { id: 'inicio', name: 'Dashboard / KPIs', icon: LayoutDashboard },
     { id: 'ventas', name: 'Ventas', icon: ShoppingCart, badge: 'POS' },
@@ -111,6 +112,24 @@ export default function Sidebar({ currentModule, onChangeModule, onLogout, mobil
 
         {/* Sidebar Footer User Card */}
         <div className="p-3 border-t border-neutral-200/80 space-y-2">
+          
+          {/* Botón Acceso Rápido a Calculadora de Vuelto */}
+          <button
+            onClick={() => {
+              if (onOpenCalculator) onOpenCalculator();
+              if (onCloseMobile) onCloseMobile();
+            }}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-200/80 text-xs font-bold transition-all shadow-2xs"
+          >
+            <div className="flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-emerald-700" />
+              <span>Calculadora de Vuelto</span>
+            </div>
+            <span className="text-[10px] bg-emerald-200/70 px-1.5 py-0.5 rounded font-mono font-bold text-emerald-900">
+              Multitasa
+            </span>
+          </button>
+
           <div className="p-2.5 rounded-xl bg-neutral-50 border border-neutral-200/70 flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-full bg-neutral-900 text-white text-xs font-bold flex items-center justify-center shrink-0">

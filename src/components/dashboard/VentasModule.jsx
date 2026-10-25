@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Search, Filter, Printer, Check, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Plus, Search, Filter, Printer, Check, ArrowRight, Calculator } from 'lucide-react';
 
-export default function VentasModule({ bcvRate = 884.75 }) {
+export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
   const [salesList, setSalesList] = useState([
     { id: 'FAC-0089', date: '22 Oct 2026 12:14', client: 'Carlos Silva', items: '4 productos', totalUsd: 42.50, paymentMethod: 'Pago Móvil (BCV)', status: 'Completado' },
     { id: 'FAC-0088', date: '22 Oct 2026 11:50', client: 'Consumidor Final', items: '2 productos', totalUsd: 14.00, paymentMethod: 'Efectivo USD', status: 'Completado' },
@@ -51,13 +51,27 @@ export default function VentasModule({ bcvRate = 884.75 }) {
           <p className="text-xs text-neutral-500">Emisión de tickets en mostrador y cobro multimoneda (USD / Bs al BCV)</p>
         </div>
 
-        <button
-          onClick={() => setShowNewSaleModal(true)}
-          className="px-4 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0 shadow-2xs"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nueva Venta Rápida</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onOpenCalculator && (
+            <button
+              type="button"
+              onClick={onOpenCalculator}
+              className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shrink-0 shadow-2xs"
+              title="Calcular vuelto a diferentes tasas"
+            >
+              <Calculator className="w-4 h-4 text-emerald-700" />
+              <span>Calculadora de Vuelto</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setShowNewSaleModal(true)}
+            className="px-4 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0 shadow-2xs"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nueva Venta Rápida</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search */}
