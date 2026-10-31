@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Search, Truck, Check, FileText, X, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, Plus, Search, Truck, Check, FileText, X, Loader2, RefreshCw, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function ComprasModule({ bcvRate = 884.75 }) {
-  const [purchases, setPurchases] = useState([]);
+  const currentUser = api.auth.getUser();
+  const userKey = currentUser?.id || currentUser?.email || 'default';
+  const COMPRAS_CACHE_KEY = `optimus360_compras_cache_${userKey}`;
+
+  const [purchases, setPurchases] = useState(() => {
+    try {
+      const cached = localStorage.getItem(COMPRAS_CACHE_KEY);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return [];
+  });
+  const [suppliersList, setSuppliersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -11,7 +22,6 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
   const [modalError, setModalError] = useState('');
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: '' }
   const [supplier, setSupplier] = useState('');
-  const [items, setItems] = useState('');
   const [amount, setAmount] = useState('');
 
   const showNotification = (message, type = 'success') => {
@@ -23,7 +33,28 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
     setLoading(true);
     try {
       const data = await api.compras.getAll();
-      setPurchases(data);
+      if (Array.isArray(data)) {
+        // Normalizar montos numéricos para garantizar que no vengan undefined
+        const normalized = data.map(item => ({
+          ...item,
+          total: Number(item.total ?? item.Total ?? item.monto ?? item.Monto ?? 0) || 0,
+          inicial: Number(item.inicial ?? item.Inicial ?? item.total ?? 0) || 0,
+          proveedor: item.proveedor || item.Proveedor || 'Proveedor Directo',
+          fecha: item.fecha || item.Fecha || 'Reciente'
+        }));
+
+        if (normalized.length > 0) {
+          setPurchases(normalized);
+          try {
+            localStorage.setItem(COMPRAS_CACHE_KEY, JSON.stringify(normalized));
+          } catch (e) {}
+        } else {
+          setPurchases([]);
+          try {
+            localStorage.removeItem(COMPRAS_CACHE_KEY);
+          } catch (e) {}
+        }
+      }
     } catch (err) {
       console.error('Error al cargar compras:', err);
     } finally {
@@ -31,8 +62,14 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
     }
   };
 
+  // Cargar lista de proveedores registrados para autocompletar en el modal
   useEffect(() => {
     fetchPurchases();
+
+    api.proveedores.getAll().then(res => {
+      if (Array.isArray(res)) setSuppliersList(res);
+      else if (res && Array.isArray(res.data)) setSuppliersList(res.data);
+    }).catch(() => {});
   }, []);
 
   const handleOpenModal = () => {
@@ -42,31 +79,69 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
 
   const handleAddPurchase = async (e) => {
     e.preventDefault();
-    if (!amount) {
-      setModalError('Por favor ingresa el monto total de la factura.');
+    if (!amount || parseFloat(amount) <= 0) {
+      setModalError('Por favor ingresa un monto total válido para la factura.');
       return;
     }
     setSaving(true);
     setModalError('');
 
     try {
-      await api.compras.create({
-        proveedor: supplier.trim() || 'Proveedor Directo',
-        total: parseFloat(amount) || 0,
-        inicial: parseFloat(amount) || 0,
-        fecha: new Date().toISOString().split('T')[0]
+      const numTotal = parseFloat(amount) || 0;
+      const cleanProv = supplier.trim() || 'Proveedor Directo';
+      const todayDate = new Date().toISOString().split('T')[0];
+
+      const res = await api.compras.create({
+        proveedor: cleanProv,
+        total: numTotal,
+        inicial: numTotal,
+        fecha: todayDate
+      });
+
+      const newPurchaseObj = {
+        id: res?.id || res?.data?.id || Date.now(),
+        uuid: res?.uuid || res?.data?.uuid || `com-${Date.now()}`,
+        proveedor: cleanProv,
+        total: numTotal,
+        inicial: numTotal,
+        fecha: todayDate
+      };
+
+      // Actualizar inmediatamente en estado y caché
+      setPurchases(prev => {
+        const updated = [newPurchaseObj, ...prev];
+        try {
+          localStorage.setItem(COMPRAS_CACHE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
       });
 
       setShowModal(false);
       setSupplier('');
-      setItems('');
       setAmount('');
-      showNotification('Factura de compra registrada exitosamente.');
+      showNotification(`Factura de $${numTotal.toFixed(2)} USD registrada exitosamente.`);
       await fetchPurchases();
     } catch (err) {
       setModalError(err.message || 'No se pudo registrar la compra en la base de datos.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (uuid, provName) => {
+    if (!window.confirm(`¿Estás seguro de eliminar esta compra de ${provName}?`)) return;
+    try {
+      await api.compras.delete(uuid);
+      setPurchases(prev => {
+        const updated = prev.filter(p => (p.uuid || p.id) !== uuid);
+        try {
+          localStorage.setItem(COMPRAS_CACHE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+      showNotification('Factura de compra eliminada.');
+    } catch (err) {
+      showNotification(err.message || 'Error al eliminar factura.', 'error');
     }
   };
 
@@ -77,7 +152,10 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
     return prov.toLowerCase().includes(term) || id.toLowerCase().includes(term);
   });
 
-  const totalSpent = purchases.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
+  const totalSpent = purchases.reduce((sum, p) => {
+    const t = Number(p.total ?? p.Total ?? p.monto ?? p.Monto ?? 0);
+    return sum + (isNaN(t) ? 0 : t);
+  }, 0);
 
   return (
     <div className="space-y-6">
@@ -170,22 +248,35 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
                   <th className="py-3.5 px-4">Fecha</th>
                   <th className="py-3.5 px-4">Proveedor</th>
                   <th className="py-3.5 px-4">Total USD</th>
-                  <th className="py-3.5 px-5">Total en Bs (BCV)</th>
+                  <th className="py-3.5 px-4">Total en Bs (BCV)</th>
+                  <th className="py-3.5 px-5 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((item) => {
-                  const total = Number(item.total) || 0;
+                  const total = Number(item.total ?? item.Total ?? item.monto ?? item.Monto ?? 0) || 0;
                   const totalBs = (total * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  const itemUuid = item.uuid || item.id;
+                  const provName = item.proveedor || 'Proveedor Directo';
+
                   return (
-                    <tr key={item.uuid || item.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={itemUuid} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3.5 px-5 font-mono font-bold text-blue-600">
-                        #{item.id ? String(item.id).padStart(4, '0') : (item.uuid ? item.uuid.substring(0, 8) : 'COMPRA')}
+                        #{item.id ? String(item.id).padStart(4, '0') : (item.uuid ? String(item.uuid).substring(0, 8) : 'COMPRA')}
                       </td>
                       <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">{item.fecha || 'Reciente'}</td>
-                      <td className="py-3.5 px-4 font-bold text-slate-900">{item.proveedor || 'Proveedor Directo'}</td>
+                      <td className="py-3.5 px-4 font-bold text-slate-900">{provName}</td>
                       <td className="py-3.5 px-4 font-mono font-extrabold text-slate-950 text-sm">${total.toFixed(2)}</td>
-                      <td className="py-3.5 px-5 font-mono font-bold text-emerald-800">Bs. {totalBs}</td>
+                      <td className="py-3.5 px-4 font-mono font-bold text-emerald-800">Bs. {totalBs}</td>
+                      <td className="py-3.5 px-5 text-right">
+                        <button
+                          onClick={() => handleDelete(itemUuid, provName)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Eliminar factura de compra"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -236,11 +327,18 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
                   type="text"
                   required
                   autoFocus
+                  list="suppliers-datalist"
                   placeholder="Ej. Distribuidora Santa Elena C.A."
                   value={supplier}
                   onChange={(e) => setSupplier(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
+                <datalist id="suppliers-datalist">
+                  {suppliersList.map(s => (
+                    <option key={s.uuid || s.id} value={s.nombre || s.name} />
+                  ))}
+                </datalist>
+                <span className="text-[10px] text-slate-400 mt-1 block">Selecciona uno registrado o escribe uno nuevo</span>
               </div>
 
               <div>
@@ -256,9 +354,9 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
                 />
               </div>
 
-              {amount && (
+              {amount && !isNaN(parseFloat(amount)) && (
                 <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-[11px] text-emerald-950 font-mono">
-                  Monto en Bolívares (BCV): <strong className="font-extrabold text-emerald-900">Bs. {(parseFloat(amount) * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</strong>
+                  Monto en Bolívares (BCV): <strong className="font-extrabold text-emerald-900">Bs. {(parseFloat(amount) * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                 </div>
               )}
 

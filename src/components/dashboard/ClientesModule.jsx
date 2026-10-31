@@ -23,7 +23,9 @@ import {
   AlertCircle,
   RotateCcw,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 
 const HISTORIES_STORAGE_KEY = 'optimus360_client_histories_v1';
@@ -127,6 +129,14 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
   const [newCreditLimit, setNewCreditLimit] = useState('50');
   const [newInitialDebt, setNewInitialDebt] = useState('0');
   const [newClientError, setNewClientError] = useState('');
+
+  // Estados del formulario de Editar Cliente
+  const [editingClient, setEditingClient] = useState(null);
+  const [editClientName, setEditClientName] = useState('');
+  const [editClientNickname, setEditClientNickname] = useState('');
+  const [editClientPhone, setEditClientPhone] = useState('');
+  const [editClientLimit, setEditClientLimit] = useState('50');
+  const [editClientError, setEditClientError] = useState('');
 
   // Notificación rápida
   const [toastMessage, setToastMessage] = useState(null);
@@ -367,6 +377,99 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       setNewClientError(err.message || 'No se pudo guardar el cliente. Intenta nuevamente.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // 3.1 EDITAR CLIENTE
+  const handleStartEditClient = (client) => {
+    setEditingClient(client);
+    setEditClientName(client.name || '');
+    setEditClientNickname(client.nickname || '');
+    setEditClientPhone(client.phone || '');
+    setEditClientLimit(String(client.creditLimit || 50));
+    setEditClientError('');
+  };
+
+  const handleSaveEditClient = async (e) => {
+    e.preventDefault();
+    if (!editClientName.trim()) {
+      setEditClientError('El nombre del cliente es obligatorio.');
+      return;
+    }
+    setSaving(true);
+    setEditClientError('');
+
+    try {
+      const targetUuid = editingClient.uuid || editingClient.id;
+      const limit = parseFloat(editClientLimit) || 50;
+      const updatePayload = {
+        nombre: editClientName.trim(),
+        responsable: editClientNickname.trim() || 'Cliente Registrado',
+        telefono: editClientPhone.trim()
+      };
+
+      await api.clientes.update(targetUuid, updatePayload);
+
+      const updated = clients.map(c => {
+        if (c.id === editingClient.id || c.uuid === targetUuid) {
+          return {
+            ...c,
+            name: editClientName.trim(),
+            nickname: editClientNickname.trim() || 'Cliente Registrado',
+            phone: editClientPhone.trim(),
+            creditLimit: limit
+          };
+        }
+        return c;
+      });
+
+      setClients(updated);
+      try {
+        localStorage.setItem(CLIENTS_CACHE_KEY, JSON.stringify(updated));
+        const savedHistories = JSON.parse(localStorage.getItem(HISTORIES_STORAGE_KEY) || '{}');
+        if (savedHistories[editingClient.id]) {
+          savedHistories[editingClient.id].creditLimit = limit;
+        }
+        savedHistories[editClientName.trim()] = savedHistories[editingClient.id];
+        localStorage.setItem(HISTORIES_STORAGE_KEY, JSON.stringify(savedHistories));
+      } catch (e) {}
+
+      if (selectedClientForPassbook && (selectedClientForPassbook.id === editingClient.id || selectedClientForPassbook.uuid === targetUuid)) {
+        setSelectedClientForPassbook(prev => ({
+          ...prev,
+          name: editClientName.trim(),
+          nickname: editClientNickname.trim() || 'Cliente Registrado',
+          phone: editClientPhone.trim(),
+          creditLimit: limit
+        }));
+      }
+
+      setEditingClient(null);
+      showToast(`Cliente "${editClientName.trim()}" actualizado.`);
+      await fetchDbClients();
+    } catch (err) {
+      setEditClientError(err.message || 'Error al actualizar cliente.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteClient = async (client) => {
+    if (!window.confirm(`¿Estás seguro de eliminar al cliente "${client.name}"?`)) return;
+    try {
+      const targetUuid = client.uuid || client.id;
+      await api.clientes.delete(targetUuid);
+      const updated = clients.filter(c => c.id !== client.id && c.uuid !== targetUuid);
+      setClients(updated);
+      try {
+        localStorage.setItem(CLIENTS_CACHE_KEY, JSON.stringify(updated));
+      } catch (e) {}
+      if (selectedClientForPassbook && selectedClientForPassbook.id === client.id) {
+        setSelectedClientForPassbook(null);
+      }
+      showToast(`Cliente "${client.name}" eliminado.`);
+    } catch (err) {
+      showToast(err.message || 'Error al eliminar cliente.');
     }
   };
 
@@ -715,6 +818,24 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                               <MessageCircle className="w-3.5 h-3.5" />
                             </button>
                           )}
+
+                          {/* Botón Editar Cliente */}
+                          <button
+                            onClick={() => handleStartEditClient(client)}
+                            className="p-1.5 rounded-xl border border-slate-200 hover:bg-blue-50 hover:text-blue-600 text-slate-500 transition-colors"
+                            title="Editar datos del cliente"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Botón Eliminar Cliente */}
+                          <button
+                            onClick={() => handleDeleteClient(client)}
+                            className="p-1.5 rounded-xl border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition-colors"
+                            title="Eliminar cliente"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
 
                         </div>
                       </td>
@@ -1271,6 +1392,109 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                   className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20"
                 >
                   Guardar Cliente
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Cliente */}
+      {editingClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full relative shadow-2xl overflow-hidden text-xs">
+            
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-900">Editar Datos del Cliente</h3>
+                  <p className="text-[11px] text-slate-500">Se sincronizará en la base de datos MySQL</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingClient(null)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditClient}>
+              <div className="p-6 space-y-4">
+                
+                {editClientError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{editClientError}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nombre Completo:</label>
+                  <input
+                    type="text"
+                    required
+                    value={editClientName}
+                    onChange={(e) => setEditClientName(e.target.value)}
+                    placeholder="Ej. Juan Pérez"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Apodo / Alias (Cómo le dices):</label>
+                  <input
+                    type="text"
+                    value={editClientNickname}
+                    onChange={(e) => setEditClientNickname(e.target.value)}
+                    placeholder="Ej. Don Juan de la esquina"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Teléfono (WhatsApp):</label>
+                  <input
+                    type="text"
+                    value={editClientPhone}
+                    onChange={(e) => setEditClientPhone(e.target.value)}
+                    placeholder="04141234567"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Límite Máximo de Fiado ($ USD):</label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={editClientLimit}
+                    onChange={(e) => setEditClientLimit(e.target.value)}
+                    placeholder="50"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  />
+                </div>
+
+              </div>
+
+              <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingClient(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold text-xs hover:bg-slate-100"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5"
+                >
+                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{saving ? 'Guardando...' : 'Guardar Cambios'}</span>
                 </button>
               </div>
             </form>

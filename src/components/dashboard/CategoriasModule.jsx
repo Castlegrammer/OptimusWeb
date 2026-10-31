@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FolderTree, Plus, X, Trash2, RefreshCw, Loader2, Package, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { FolderTree, Plus, X, Trash2, Edit2, RefreshCw, Loader2, Package, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function CategoriasModule() {
@@ -18,6 +18,8 @@ export default function CategoriasModule() {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editName, setEditName] = useState('');
   const [modalError, setModalError] = useState('');
   const [toast, setToast] = useState(null);
 
@@ -67,6 +69,12 @@ export default function CategoriasModule() {
     setShowModal(true);
   };
 
+  const handleStartEdit = (cat) => {
+    setEditingCategory(cat);
+    setEditName(cat.nombre);
+    setModalError('');
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!name || !name.trim()) {
@@ -87,7 +95,6 @@ export default function CategoriasModule() {
         total_productos: 0
       };
 
-      // Actualizar inmediatamente en pantalla y guardar en cache
       setCategories(prev => {
         const updated = [newCategoryObj, ...prev.filter(c => c.nombre.toLowerCase() !== cleanName.toLowerCase())];
         try {
@@ -102,6 +109,38 @@ export default function CategoriasModule() {
       await fetchCategories();
     } catch (err) {
       setModalError(err.message || 'No se pudo crear la categoría.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editName || !editName.trim()) {
+      setModalError('El nombre no puede estar vacío.');
+      return;
+    }
+    setSaving(true);
+    setModalError('');
+
+    try {
+      const cleanName = editName.trim();
+      const targetUuid = editingCategory.uuid || editingCategory.id;
+      await api.categorias.update(targetUuid, cleanName);
+
+      setCategories(prev => {
+        const updated = prev.map(c => ((c.uuid || c.id) === targetUuid ? { ...c, nombre: cleanName } : c));
+        try {
+          localStorage.setItem(CATS_CACHE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+
+      setEditingCategory(null);
+      showNotification(`Categoría actualizada a "${cleanName}".`);
+      await fetchCategories();
+    } catch (err) {
+      setModalError(err.message || 'No se pudo actualizar la categoría.');
     } finally {
       setSaving(false);
     }
@@ -193,14 +232,23 @@ export default function CategoriasModule() {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-200/40 flex items-center justify-between text-[11px] font-semibold text-slate-400">
-                  <span>Actualizado</span>
-                  <button
-                    onClick={() => handleDelete(cat.uuid, cat.nombre)}
-                    className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
-                    title="Eliminar categoría"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <span>Familia activa</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleStartEdit(cat)}
+                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50/80 rounded-lg transition-colors"
+                      title="Editar nombre de la categoría"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(cat.uuid, cat.nombre)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50/80 rounded-lg transition-colors"
+                      title="Eliminar categoría"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -271,6 +319,74 @@ export default function CategoriasModule() {
                 >
                   {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{saving ? 'Guardando...' : 'Crear Categoría'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Categoría */}
+      {editingCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-sm w-full relative shadow-2xl text-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Editar Categoría</h3>
+                  <p className="text-[11px] text-slate-500">Se actualizará en MySQL y en todos sus productos</p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setEditingCategory(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-start gap-2.5 animate-in fade-in duration-200">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-[11px] text-rose-900">Error al actualizar</p>
+                  <p className="text-[11px] leading-tight text-rose-700">{modalError}</p>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEdit} className="space-y-3.5">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Nombre de la Categoría:</label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingCategory(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5"
+                >
+                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{saving ? 'Guardando...' : 'Guardar Cambios'}</span>
                 </button>
               </div>
             </form>

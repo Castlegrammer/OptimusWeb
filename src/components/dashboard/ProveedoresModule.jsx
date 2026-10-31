@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Plus, Search, Phone, FileText, X, Building2, Loader2, RefreshCw, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Truck, Plus, Search, Phone, FileText, X, Building2, Loader2, RefreshCw, Trash2, Edit2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function ProveedoresModule({ bcvRate = 884.75 }) {
@@ -18,14 +18,22 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState(null);
   const [modalError, setModalError] = useState('');
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: '' }
   
-  // Form states
+  // Form states (Nuevo)
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [rif, setRif] = useState('');
   const [phone, setPhone] = useState('');
+
+  // Form states (Editar)
+  const [editName, setEditName] = useState('');
+  const [editContact, setEditContact] = useState('');
+  const [editRif, setEditRif] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editZona, setEditZona] = useState('Principal');
 
   const showNotification = (message, type = 'success') => {
     setToast({ message, type });
@@ -117,6 +125,55 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
       await fetchSuppliers();
     } catch (err) {
       setModalError(err.message || 'No se pudo guardar el proveedor en la base de datos.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStartEdit = (supplier) => {
+    setEditingSupplier(supplier);
+    setEditName(supplier.nombre || supplier.name || '');
+    setEditContact(supplier.responsable || supplier.contact || '');
+    setEditRif(supplier.direccion || supplier.rif || '');
+    setEditPhone(supplier.telefono || supplier.phone || '');
+    setEditZona(supplier.zona || 'Principal');
+    setModalError('');
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editName.trim()) {
+      setModalError('La razón social no puede estar vacía.');
+      return;
+    }
+    setSaving(true);
+    setModalError('');
+
+    try {
+      const targetUuid = editingSupplier.uuid || editingSupplier.id;
+      const updatePayload = {
+        nombre: editName.trim(),
+        responsable: editContact.trim() || 'Contacto Comercial',
+        direccion: editRif.trim() || '',
+        telefono: editPhone.trim() || '',
+        zona: editZona || 'Principal'
+      };
+
+      await api.proveedores.update(targetUuid, updatePayload);
+
+      setSuppliers(prev => {
+        const updated = prev.map(p => ((p.uuid || p.id) === targetUuid ? { ...p, ...updatePayload } : p));
+        try {
+          localStorage.setItem(PROV_STORAGE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+
+      setEditingSupplier(null);
+      showNotification(`Proveedor "${editName.trim()}" actualizado correctamente.`);
+      await fetchSuppliers();
+    } catch (err) {
+      setModalError(err.message || 'Error al actualizar el proveedor.');
     } finally {
       setSaving(false);
     }
@@ -242,13 +299,22 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
                         {s.zona || 'Principal'}
                       </td>
                       <td className="py-3.5 px-5 text-right">
-                        <button
-                          onClick={() => handleDelete(sUuid, sName)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Eliminar proveedor"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleStartEdit(s)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Editar proveedor"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(sUuid, sName)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Eliminar proveedor"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -357,6 +423,105 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
                 >
                   {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{saving ? 'Guardando...' : 'Guardar Proveedor'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Proveedor */}
+      {editingSupplier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full relative shadow-2xl text-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Editar Proveedor</h3>
+                  <p className="text-[11px] text-slate-500">Se actualizará en la base de datos central</p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setEditingSupplier(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-start gap-2.5 animate-in fade-in duration-200">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-[11px] text-rose-900">Error al actualizar</p>
+                  <p className="text-[11px] leading-tight text-rose-700">{modalError}</p>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEdit} className="space-y-3.5">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Nombre Comercial / Empresa:</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Contacto o Asesor Comercial:</label>
+                <input
+                  type="text"
+                  value={editContact}
+                  onChange={(e) => setEditContact(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">RIF / Dirección:</label>
+                  <input
+                    type="text"
+                    value={editRif}
+                    onChange={(e) => setEditRif(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Teléfono:</label>
+                  <input
+                    type="text"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingSupplier(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5"
+                >
+                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{saving ? 'Guardando...' : 'Guardar Cambios'}</span>
                 </button>
               </div>
             </form>

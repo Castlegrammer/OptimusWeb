@@ -472,29 +472,61 @@ export const api = {
   compras: {
     async getAll() {
       try {
-        const syncRes = await request('/sync/pull?since=2000-01-01');
-        if (syncRes && syncRes.data && syncRes.data.compras) {
-          return syncRes.data.compras.filter((c) => !c.eliminado);
-        }
-      } catch (e) {}
+        const res = await request('/compras');
+        if (Array.isArray(res)) return res;
+        if (res && Array.isArray(res.data)) return res.data;
+      } catch (err) {
+        try {
+          const syncRes = await request('/sync/pull?since=2000-01-01');
+          if (syncRes && syncRes.data && syncRes.data.compras) {
+            return syncRes.data.compras.filter((c) => !c.eliminado).map((c) => ({
+              id: c.id,
+              uuid: c.uuid,
+              proveedor: c.proveedor || 'Proveedor Directo',
+              fecha: c.fecha || '',
+              total: Number(c.total ?? c.Total ?? 0),
+              inicial: Number(c.inicial ?? c.Inicial ?? c.total ?? 0),
+            }));
+          }
+        } catch (e) {}
+      }
       return [];
     },
     async create(compraData) {
-      const cUuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `com-${Date.now()}`;
-      return await request('/sync/push', {
-        method: 'POST',
-        body: JSON.stringify({
-          compras: [
-            {
-              uuid: cUuid,
-              proveedor: compraData.proveedor || '',
-              fecha: compraData.fecha || new Date().toISOString().split('T')[0],
-              total: Number(compraData.total) || 0,
-              inicial: Number(compraData.inicial) || Number(compraData.total) || 0,
-              eliminado: false,
-            },
-          ],
-        }),
+      const payload = {
+        proveedor: compraData.proveedor || '',
+        fecha: compraData.fecha || new Date().toISOString().split('T')[0],
+        total: Number(compraData.total) || 0,
+        inicial: Number(compraData.inicial !== undefined ? compraData.inicial : compraData.total) || 0,
+      };
+
+      try {
+        return await request('/compras', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        const cUuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `com-${Date.now()}`;
+        return await request('/sync/push', {
+          method: 'POST',
+          body: JSON.stringify({
+            compras: [
+              {
+                uuid: cUuid,
+                proveedor: payload.proveedor,
+                fecha: payload.fecha,
+                total: payload.total,
+                inicial: payload.inicial,
+                eliminado: false,
+              },
+            ],
+          }),
+        });
+      }
+    },
+    async delete(uuid) {
+      return await request(`/compras/${uuid}`, {
+        method: 'DELETE',
       });
     },
   },
@@ -520,6 +552,12 @@ export const api = {
     async create(nombre) {
       return await request('/categorias', {
         method: 'POST',
+        body: JSON.stringify({ nombre }),
+      });
+    },
+    async update(uuid, nombre) {
+      return await request(`/categorias/${uuid}`, {
+        method: 'PUT',
         body: JSON.stringify({ nombre }),
       });
     },
