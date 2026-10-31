@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
 import { 
   Users, 
   Plus, 
@@ -103,6 +104,37 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       console.error('Error guardando libreta de fiado:', e);
     }
   }, [clients]);
+
+  // Cargar clientes reales desde la base de datos MySQL en Coolify
+  useEffect(() => {
+    const fetchDbClients = async () => {
+      try {
+        const dbClients = await api.clientes.getAll();
+        if (Array.isArray(dbClients) && dbClients.length > 0) {
+          setClients(prev => {
+            const existingUuids = new Set(prev.map(c => c.uuid || c.id || c.name));
+            const newEntries = dbClients
+              .filter(db => !existingUuids.has(db.uuid) && !existingUuids.has(db.nombre))
+              .map(db => ({
+                id: db.uuid || `CLI-${db.id}`,
+                uuid: db.uuid,
+                name: db.nombre,
+                nickname: db.responsable || db.zona || 'Cliente de base de datos',
+                phone: db.telefono || '+58 ',
+                debtUsd: 0,
+                creditLimit: 50,
+                status: 'Solvente',
+                history: []
+              }));
+            return newEntries.length > 0 ? [...newEntries, ...prev] : prev;
+          });
+        }
+      } catch (err) {
+        console.warn('Aviso: no se pudieron cargar clientes de MySQL:', err);
+      }
+    };
+    fetchDbClients();
+  }, []);
 
   const [search, setSearch] = useState('');
 
@@ -305,6 +337,14 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     };
 
     setClients([newClient, ...clients]);
+
+    // Guardar también en la base de datos MySQL (API REST)
+    api.clientes.create({
+      nombre: newName.trim(),
+      responsable: newNickname.trim(),
+      telefono: newPhone.trim()
+    }).catch(err => console.error('Error al guardar cliente en MySQL:', err));
+
     setShowNewClientModal(false);
     setNewName('');
     setNewNickname('');
