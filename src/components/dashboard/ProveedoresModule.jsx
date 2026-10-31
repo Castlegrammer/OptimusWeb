@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Plus, Search, Phone, FileText, X, Building2, Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { Truck, Plus, Search, Phone, FileText, X, Building2, Loader2, RefreshCw, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function ProveedoresModule({ bcvRate = 884.75 }) {
@@ -8,12 +8,19 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [modalError, setModalError] = useState('');
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: '' }
   
   // Form states
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [rif, setRif] = useState('');
   const [phone, setPhone] = useState('');
+
+  const showNotification = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const fetchSuppliers = async () => {
     setLoading(true);
@@ -22,6 +29,7 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
       setSuppliers(data);
     } catch (err) {
       console.error('Error al cargar proveedores de MySQL:', err);
+      showNotification(err.message || 'No se pudieron cargar los proveedores.', 'error');
     } finally {
       setLoading(false);
     }
@@ -37,10 +45,19 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
     }
   };
 
+  const handleOpenModal = () => {
+    setModalError('');
+    setShowModal(true);
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setModalError('Por favor ingresa la razón social o nombre comercial del proveedor.');
+      return;
+    }
     setSaving(true);
+    setModalError('');
 
     try {
       await api.proveedores.create({
@@ -51,14 +68,16 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
         zona: 'Principal'
       });
 
+      const addedName = name.trim();
       setName('');
       setContact('');
       setRif('');
       setPhone('');
       setShowModal(false);
+      showNotification(`Proveedor "${addedName}" guardado exitosamente en la base de datos.`);
       await fetchSuppliers();
     } catch (err) {
-      alert(err.message || 'Error al guardar proveedor en MySQL');
+      setModalError(err.message || 'No se pudo guardar el proveedor en la base de datos.');
     } finally {
       setSaving(false);
     }
@@ -69,8 +88,9 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
     try {
       await api.proveedores.delete(uuid);
       setSuppliers(prev => prev.filter(p => (p.uuid || p.id) !== uuid));
+      showNotification(`Proveedor "${provName}" eliminado correctamente.`);
     } catch (err) {
-      alert('Error al eliminar: ' + err.message);
+      showNotification(err.message || 'Error al eliminar proveedor.', 'error');
     }
   };
 
@@ -110,7 +130,7 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
           </button>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenModal}
             className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 shrink-0"
           >
             <Plus className="w-4 h-4" />
@@ -217,6 +237,17 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
               </button>
             </div>
 
+            {/* Error banner en el modal */}
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-start gap-2.5 animate-in fade-in duration-200">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-[11px] text-rose-900">No se pudo guardar</p>
+                  <p className="text-[11px] leading-tight text-rose-700">{modalError}</p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleAdd} className="space-y-3.5">
               <div>
                 <label className="block text-slate-700 font-bold mb-1">Razón Social / Nombre Comercial:</label>
@@ -284,6 +315,30 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold ${
+            toast.type === 'error'
+              ? 'bg-rose-900/95 text-white border-rose-800 shadow-rose-950/20 backdrop-blur-md'
+              : 'bg-slate-900/95 text-white border-slate-800 shadow-slate-950/20 backdrop-blur-md'
+          }`}>
+            {toast.type === 'error' ? (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            )}
+            <span>{toast.message}</span>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-2 text-slate-400 hover:text-white p-0.5 rounded-lg"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}

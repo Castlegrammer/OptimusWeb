@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Search, Truck, Check, FileText, X, Loader2, RefreshCw } from 'lucide-react';
+import { ShoppingBag, Plus, Search, Truck, Check, FileText, X, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function ComprasModule({ bcvRate = 884.75 }) {
@@ -8,9 +8,16 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [modalError, setModalError] = useState('');
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: '' }
   const [supplier, setSupplier] = useState('');
   const [items, setItems] = useState('');
   const [amount, setAmount] = useState('');
+
+  const showNotification = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const fetchPurchases = async () => {
     setLoading(true);
@@ -28,10 +35,19 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
     fetchPurchases();
   }, []);
 
+  const handleOpenModal = () => {
+    setModalError('');
+    setShowModal(true);
+  };
+
   const handleAddPurchase = async (e) => {
     e.preventDefault();
-    if (!amount) return;
+    if (!amount) {
+      setModalError('Por favor ingresa el monto total de la factura.');
+      return;
+    }
     setSaving(true);
+    setModalError('');
 
     try {
       await api.compras.create({
@@ -45,9 +61,10 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
       setSupplier('');
       setItems('');
       setAmount('');
+      showNotification('Factura de compra registrada exitosamente.');
       await fetchPurchases();
     } catch (err) {
-      alert(err.message || 'Error al registrar compra');
+      setModalError(err.message || 'No se pudo registrar la compra en la base de datos.');
     } finally {
       setSaving(false);
     }
@@ -88,7 +105,7 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
           </button>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenModal}
             className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 shrink-0"
           >
             <Plus className="w-4 h-4" />
@@ -201,6 +218,17 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
               </button>
             </div>
 
+            {/* Error banner en el modal */}
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-start gap-2.5 animate-in fade-in duration-200">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-[11px] text-rose-900">No se pudo guardar la compra</p>
+                  <p className="text-[11px] leading-tight text-rose-700">{modalError}</p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleAddPurchase} className="space-y-3.5">
               <div>
                 <label className="block text-slate-700 font-bold mb-1">Proveedor / Distribuidor:</label>
@@ -252,6 +280,30 @@ export default function ComprasModule({ bcvRate = 884.75 }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold ${
+            toast.type === 'error'
+              ? 'bg-rose-900/95 text-white border-rose-800 shadow-rose-950/20 backdrop-blur-md'
+              : 'bg-slate-900/95 text-white border-slate-800 shadow-slate-950/20 backdrop-blur-md'
+          }`}>
+            {toast.type === 'error' ? (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            )}
+            <span>{toast.message}</span>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-2 text-slate-400 hover:text-white p-0.5 rounded-lg"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}

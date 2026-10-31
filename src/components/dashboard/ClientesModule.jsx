@@ -20,6 +20,7 @@ import {
   Clock, 
   Phone,
   AlertTriangle,
+  AlertCircle,
   RotateCcw,
   Loader2,
   RefreshCw
@@ -108,6 +109,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
   const [newPhone, setNewPhone] = useState('');
   const [newCreditLimit, setNewCreditLimit] = useState('50');
   const [newInitialDebt, setNewInitialDebt] = useState('0');
+  const [newClientError, setNewClientError] = useState('');
 
   // Notificación rápida
   const [toastMessage, setToastMessage] = useState(null);
@@ -278,6 +280,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     e.preventDefault();
     if (!newName.trim()) return;
     setSaving(true);
+    setNewClientError('');
 
     try {
       const initialDebt = parseFloat(newInitialDebt) || 0;
@@ -322,7 +325,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       await fetchDbClients();
       showToast(`Cliente "${newName.trim()}" guardado en la base de datos.`);
     } catch (err) {
-      alert(err.message || 'Error al guardar cliente en MySQL');
+      setNewClientError(err.message || 'No se pudo guardar el cliente. Intenta nuevamente.');
     } finally {
       setSaving(false);
     }
@@ -410,7 +413,10 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
           </button>
 
           <button
-            onClick={() => setShowNewClientModal(true)}
+            onClick={() => {
+              setNewClientError('');
+              setShowNewClientModal(true);
+            }}
             className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 shrink-0"
           >
             <UserPlus className="w-4 h-4" />
@@ -1140,6 +1146,15 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
               </div>
 
               <div className="p-6 space-y-3.5 text-xs">
+                {newClientError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-start gap-2.5 animate-in fade-in duration-200">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-bold text-[11px] text-rose-900">No se pudo guardar el cliente</p>
+                      <p className="text-[11px] leading-tight text-rose-700">{newClientError}</p>
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Nombre Completo:</label>

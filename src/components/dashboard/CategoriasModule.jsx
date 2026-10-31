@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FolderTree, Plus, X, Trash2, RefreshCw, Loader2, Package } from 'lucide-react';
+import { FolderTree, Plus, X, Trash2, RefreshCw, Loader2, Package, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function CategoriasModule() {
@@ -8,6 +8,13 @@ export default function CategoriasModule() {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [modalError, setModalError] = useState('');
+  const [toast, setToast] = useState(null);
+
+  const showNotification = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const colors = [
     { color: 'from-blue-500/10 to-indigo-500/10', border: 'border-blue-200/80', badge: 'bg-blue-100 text-blue-800' },
@@ -33,18 +40,29 @@ export default function CategoriasModule() {
     fetchCategories();
   }, []);
 
+  const handleOpenModal = () => {
+    setModalError('');
+    setShowModal(true);
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!name || !name.trim()) return;
+    if (!name || !name.trim()) {
+      setModalError('Por favor ingresa un nombre para la categoría.');
+      return;
+    }
     setSaving(true);
+    setModalError('');
 
     try {
       await api.categorias.create(name.trim());
+      const catName = name.trim();
       setName('');
       setShowModal(false);
+      showNotification(`Categoría "${catName}" creada exitosamente.`);
       await fetchCategories();
     } catch (err) {
-      alert(err.message || 'Error al crear categoría');
+      setModalError(err.message || 'No se pudo crear la categoría.');
     } finally {
       setSaving(false);
     }
@@ -55,8 +73,9 @@ export default function CategoriasModule() {
     try {
       await api.categorias.delete(uuid);
       setCategories(categories.filter(c => c.uuid !== uuid));
+      showNotification(`Categoría "${catName}" eliminada correctamente.`);
     } catch (err) {
-      alert('Error al eliminar: ' + err.message);
+      showNotification(err.message || 'Error al eliminar la categoría.', 'error');
     }
   };
 
@@ -86,7 +105,7 @@ export default function CategoriasModule() {
           </button>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenModal}
             className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 shrink-0"
           >
             <Plus className="w-4 h-4" />
@@ -167,6 +186,17 @@ export default function CategoriasModule() {
               </button>
             </div>
 
+            {/* Error banner en el modal */}
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-start gap-2.5 animate-in fade-in duration-200">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-[11px] text-rose-900">No se pudo crear la categoría</p>
+                  <p className="text-[11px] leading-tight text-rose-700">{modalError}</p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleAdd} className="space-y-3.5">
               <div>
                 <label className="block text-slate-700 font-bold mb-1">Nombre de la Categoría:</label>
@@ -199,6 +229,30 @@ export default function CategoriasModule() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold ${
+            toast.type === 'error'
+              ? 'bg-rose-900/95 text-white border-rose-800 shadow-rose-950/20 backdrop-blur-md'
+              : 'bg-slate-900/95 text-white border-slate-800 shadow-slate-950/20 backdrop-blur-md'
+          }`}>
+            {toast.type === 'error' ? (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            )}
+            <span>{toast.message}</span>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-2 text-slate-400 hover:text-white p-0.5 rounded-lg"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}

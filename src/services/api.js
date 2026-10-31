@@ -23,6 +23,59 @@ function decodeJwtPayload(token) {
   }
 }
 
+function getNowTimestamp() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+function formatFriendlyError(rawError, status = null) {
+  const text = (typeof rawError === 'string' ? rawError : rawError?.message || '').toLowerCase();
+
+  if (text.includes('failed to fetch') || text.includes('networkerror') || text.includes('load failed')) {
+    return 'No se pudo conectar con el servidor central. Verifica tu conexión a internet o intenta nuevamente.';
+  }
+
+  if (status === 401 || text.includes('jwt') || text.includes('token') || text.includes('no autorizado') || text.includes('unauthorized')) {
+    return 'Tu sesión ha vencido o no es válida. Por favor, inicia sesión nuevamente.';
+  }
+
+  if (status === 403) {
+    return 'No tienes permisos suficientes para realizar esta acción.';
+  }
+
+  if (text.includes('unknown column') && text.includes('fecha_creacion')) {
+    return 'El sistema actualizó automáticamente la estructura de fecha. Por favor vuelve a intentar guardar.';
+  }
+
+  if (text.includes('er_dup_entry') || text.includes('duplicate entry')) {
+    if (text.includes('email') || text.includes('correo')) {
+      return 'Ya existe una cuenta registrada con este correo electrónico.';
+    }
+    if (text.includes('codigo') || text.includes('barcode')) {
+      return 'Ya existe un producto con este código de barras.';
+    }
+    return 'Ya existe un registro con estos mismos datos en la base de datos.';
+  }
+
+  if (text.includes('er_bad_field_error')) {
+    return 'Hubo un error de compatibilidad con las columnas de la base de datos.';
+  }
+
+  if (status === 404) {
+    return 'El registro solicitado no fue encontrado en el servidor.';
+  }
+
+  if (status >= 500) {
+    if (rawError?.message && !rawError.message.includes('500') && !rawError.message.includes('Internal Server Error')) {
+      return rawError.message;
+    }
+    return 'Ocurrió un error en el servidor central. Por favor, intenta nuevamente en unos momentos.';
+  }
+
+  return rawError?.message || 'Ocurrió un inconveniente al procesar la solicitud.';
+}
+
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);
   const headers = {
@@ -46,7 +99,12 @@ async function request(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config);
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseErr) {
+      data = null;
+    }
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -54,12 +112,20 @@ async function request(endpoint, options = {}) {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
       }
-      throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
+      const rawMessage = data?.message || data?.error || `Error ${response.status}: ${response.statusText}`;
+      const friendlyMessage = formatFriendlyError({ message: rawMessage }, response.status);
+      const err = new Error(friendlyMessage);
+      err.status = response.status;
+      err.raw = data;
+      throw err;
     }
 
     return data;
   } catch (err) {
     console.error(`API Error [${endpoint}]:`, err);
+    if (!err.status) {
+      throw new Error(formatFriendlyError(err));
+    }
     throw err;
   }
 }
@@ -224,10 +290,33 @@ export const api = {
       return [];
     },
     async create(clientData) {
-      return await request('/clientes', {
-        method: 'POST',
-        body: JSON.stringify(clientData),
-      });
+      const payload = {
+        ...clientData,
+        fecha_creacion: clientData.fecha_creacion || getNowTimestamp(),
+      };
+      try {
+        return await request('/clientes', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        const cliUuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `cli-${Date.now()}`;
+        return await request('/sync/push', {
+          method: 'POST',
+          body: JSON.stringify({
+            clientes: [
+              {
+                uuid: cliUuid,
+                nombre: payload.nombre,
+                telefono: payload.telefono || '',
+                responsable: payload.responsable || '',
+                fecha_creacion: payload.fecha_creacion,
+                eliminado: false,
+              },
+            ],
+          }),
+        });
+      }
     },
     async update(uuid, clientData) {
       return await request(`/clientes/${uuid}`, {
@@ -271,10 +360,14 @@ export const api = {
       return [];
     },
     async create(provData) {
+      const payload = {
+        ...provData,
+        fecha_creacion: provData.fecha_creacion || getNowTimestamp(),
+      };
       try {
         return await request('/proveedores', {
           method: 'POST',
-          body: JSON.stringify(provData),
+          body: JSON.stringify(payload),
         });
       } catch (err) {
         const provUuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `prov-${Date.now()}`;
@@ -284,12 +377,12 @@ export const api = {
             proveedores: [
               {
                 uuid: provUuid,
-                nombre: provData.nombre,
-                responsable: provData.responsable || provData.contact || '',
-                direccion: provData.direccion || provData.rif || '',
-                telefono: provData.telefono || provData.phone || '',
-                zona: provData.zona || '',
-                fecha_creacion: new Date().toISOString().split('T')[0],
+                nombre: payload.nombre,
+                responsable: payload.responsable || payload.contact || '',
+                direccion: payload.direccion || payload.rif || '',
+                telefono: payload.telefono || payload.phone || '',
+                zona: payload.zona || 'Principal',
+                fecha_creacion: payload.fecha_creacion,
                 eliminado: false,
               },
             ],

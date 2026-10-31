@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Boxes, AlertTriangle, Search, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { Boxes, AlertTriangle, Search, CheckCircle2, Loader2, RefreshCw, AlertCircle, X } from 'lucide-react';
 import api from '../../services/api';
 
 export default function InventarioModule() {
@@ -7,6 +7,12 @@ export default function InventarioModule() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
   const [search, setSearch] = useState('');
+  const [toast, setToast] = useState(null);
+
+  const showNotification = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const fetchStock = async () => {
     setLoading(true);
@@ -39,8 +45,9 @@ export default function InventarioModule() {
         }
         return p;
       }));
+      showNotification(`Stock de "${prod.nombre}" actualizado a ${next} unidades.`);
     } catch (err) {
-      alert('Error actualizando stock: ' + err.message);
+      showNotification(err.message || 'Error al actualizar el stock.', 'error');
     } finally {
       setUpdatingId(null);
     }
@@ -192,6 +199,30 @@ export default function InventarioModule() {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold ${
+            toast.type === 'error'
+              ? 'bg-rose-900/95 text-white border-rose-800 shadow-rose-950/20 backdrop-blur-md'
+              : 'bg-slate-900/95 text-white border-slate-800 shadow-slate-950/20 backdrop-blur-md'
+          }`}>
+            {toast.type === 'error' ? (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            )}
+            <span>{toast.message}</span>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-2 text-slate-400 hover:text-white p-0.5 rounded-lg"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

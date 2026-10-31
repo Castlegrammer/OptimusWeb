@@ -7,7 +7,9 @@ import {
   Receipt,
   X,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -17,10 +19,17 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [showNewSaleModal, setShowNewSaleModal] = useState(false);
+  const [modalError, setModalError] = useState('');
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: '' }
   const [newClient, setNewClient] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newConcept, setNewConcept] = useState('Venta Mostrador');
   const [availableClients, setAvailableClients] = useState([]);
+
+  const showNotification = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const fetchSales = async () => {
     setLoading(true);
@@ -48,9 +57,13 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
 
   const handleCreateSale = async (e) => {
     e.preventDefault();
-    if (!newAmount) return;
+    if (!newAmount) {
+      setModalError('Por favor ingresa el monto total de la venta.');
+      return;
+    }
     const amountUsd = parseFloat(newAmount) || 0;
     setSaving(true);
+    setModalError('');
 
     try {
       await api.ventas.create({
@@ -71,9 +84,10 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
       setNewClient('');
       setNewAmount('');
       setNewConcept('Venta Mostrador');
+      showNotification(`Venta de $${amountUsd.toFixed(2)} registrada exitosamente.`);
       await fetchSales();
     } catch (err) {
-      alert(err.message || 'Error al registrar venta');
+      setModalError(err.message || 'No se pudo registrar la venta en la base de datos.');
     } finally {
       setSaving(false);
     }
@@ -123,7 +137,10 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
           </button>
 
           <button
-            onClick={() => setShowNewSaleModal(true)}
+            onClick={() => {
+              setModalError('');
+              setShowNewSaleModal(true);
+            }}
             className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30"
           >
             <Plus className="w-4 h-4" />
@@ -221,6 +238,17 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
               </button>
             </div>
 
+            {/* Error banner en el modal */}
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-start gap-2.5 animate-in fade-in duration-200">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-[11px] text-rose-900">No se pudo registrar la venta</p>
+                  <p className="text-[11px] leading-tight text-rose-700">{modalError}</p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleCreateSale} className="space-y-3.5">
               <div>
                 <label className="block text-slate-700 font-bold mb-1">Cliente:</label>
@@ -289,6 +317,30 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold ${
+            toast.type === 'error'
+              ? 'bg-rose-900/95 text-white border-rose-800 shadow-rose-950/20 backdrop-blur-md'
+              : 'bg-slate-900/95 text-white border-slate-800 shadow-slate-950/20 backdrop-blur-md'
+          }`}>
+            {toast.type === 'error' ? (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            )}
+            <span>{toast.message}</span>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-2 text-slate-400 hover:text-white p-0.5 rounded-lg"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}
