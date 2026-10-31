@@ -73,6 +73,25 @@ export const api = {
     isAuthenticated() {
       return !!localStorage.getItem(TOKEN_KEY);
     },
+    async getProfile() {
+      return await request('/auth/profile');
+    },
+    async verifySession() {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
+      try {
+        const res = await request('/auth/profile');
+        if (res && res.success && res.user) {
+          localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+          return res.user;
+        }
+        return null;
+      } catch (err) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        return null;
+      }
+    },
   },
 
   // Productos

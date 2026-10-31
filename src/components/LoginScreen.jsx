@@ -3,8 +3,8 @@ import { ArrowRight, Eye, EyeOff, ShieldCheck, AlertCircle, Loader2 } from 'luci
 import api from '../services/api';
 
 export default function LoginScreen({ onLoginSuccess }) {
-  const [email, setEmail] = useState('admin@optimus360.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -58,7 +58,7 @@ export default function LoginScreen({ onLoginSuccess }) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@optimus360.com"
+              placeholder="tu-correo@negocio.com"
               className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
             />
           </div>
