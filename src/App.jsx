@@ -4,7 +4,18 @@ import LoginScreen from './components/LoginScreen';
 import api from './services/api';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(api.auth.isAuthenticated());
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      if (urlToken) {
+        localStorage.setItem('optimus360_auth_token', urlToken);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return true;
+      }
+    } catch (e) {}
+    return api.auth.isAuthenticated();
+  });
 
   const handleLogout = () => {
     api.auth.logout();
