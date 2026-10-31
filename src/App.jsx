@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 export default function App() {
   const [isChecking, setIsChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(() => api.auth.getUser());
 
   useEffect(() => {
     async function checkAuth() {
@@ -21,20 +22,33 @@ export default function App() {
         const token = api.auth.getToken();
         if (!token) {
           setIsAuthenticated(false);
+          setCurrentUser(null);
           setIsChecking(false);
           return;
+        }
+
+        // Si ya hay usuario en cache / token decodificado, cargarlo de inmediato
+        const cachedUser = api.auth.getUser();
+        if (cachedUser) {
+          setCurrentUser(cachedUser);
         }
 
         // Validar token y usuario directamente con la base de datos a través de la API
         const user = await api.auth.verifySession();
         if (user) {
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        } else if (cachedUser) {
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
+          setCurrentUser(null);
         }
       } catch (err) {
-        api.auth.logout();
-        setIsAuthenticated(false);
+        if (!api.auth.getToken()) {
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+        }
       } finally {
         setIsChecking(false);
       }
@@ -45,7 +59,14 @@ export default function App() {
 
   const handleLogout = () => {
     api.auth.logout();
+    setCurrentUser(null);
     setIsAuthenticated(false);
+  };
+
+  const handleLoginSuccess = (user) => {
+    const activeUser = user || api.auth.getUser();
+    setCurrentUser(activeUser);
+    setIsAuthenticated(true);
   };
 
   if (isChecking) {
@@ -65,11 +86,12 @@ export default function App() {
   }
 
   if (!isAuthenticated) {
-    return <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />;
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
     <DashboardLayout 
+      user={currentUser}
       onLogout={handleLogout} 
     />
   );

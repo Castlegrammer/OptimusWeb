@@ -15,6 +15,8 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
   const [newName, setNewName] = useState('');
   const [newSku, setNewSku] = useState('');
   const [newCategory, setNewCategory] = useState('General');
+  const [newSupplier, setNewSupplier] = useState('');
+  const [availableSuppliers, setAvailableSuppliers] = useState([]);
   const [newCost, setNewCost] = useState('');
   const [newPrice, setNewPrice] = useState('');
   const [newStock, setNewStock] = useState('');
@@ -42,9 +44,17 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
     }
   };
 
+  const fetchSuppliers = async () => {
+    try {
+      const sups = await api.proveedores.getAll();
+      setAvailableSuppliers(sups);
+    } catch (e) {}
+  };
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchSuppliers();
   }, [selectedCategory]);
 
   const handleSearchSubmit = (e) => {
@@ -63,6 +73,7 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
         nombre: newName.trim(),
         descripcion: newSku ? `SKU: ${newSku}` : '',
         categoria: newCategory,
+        proveedor: newSupplier.trim(),
         costo: parseFloat(newCost) || 0,
         precio: parseFloat(newPrice) || 0,
         cantidad: parseFloat(newStock) || 0,
@@ -72,6 +83,8 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
       setShowAddModal(false);
       setNewName('');
       setNewSku('');
+      setNewCategory('General');
+      setNewSupplier('');
       setNewCost('');
       setNewPrice('');
       setNewStock('');
@@ -308,6 +321,23 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
                     className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Proveedor / Distribuidor:</label>
+                <input
+                  type="text"
+                  list="product-suppliers-datalist"
+                  placeholder="Ej. Distribuidora Santa Elena C.A., Polar..."
+                  value={newSupplier}
+                  onChange={(e) => setNewSupplier(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                />
+                <datalist id="product-suppliers-datalist">
+                  {availableSuppliers.map((s) => (
+                    <option key={s.uuid || s.id} value={s.nombre || s.name} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="grid grid-cols-3 gap-2.5">

@@ -20,6 +20,7 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
   const [newClient, setNewClient] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newConcept, setNewConcept] = useState('Venta Mostrador');
+  const [availableClients, setAvailableClients] = useState([]);
 
   const fetchSales = async () => {
     setLoading(true);
@@ -33,8 +34,16 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
     }
   };
 
+  const fetchAvailableClients = async () => {
+    try {
+      const cls = await api.clientes.getAll();
+      setAvailableClients(cls);
+    } catch (e) {}
+  };
+
   useEffect(() => {
     fetchSales();
+    fetchAvailableClients();
   }, []);
 
   const handleCreateSale = async (e) => {
@@ -217,11 +226,18 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
                 <label className="block text-slate-700 font-bold mb-1">Cliente:</label>
                 <input
                   type="text"
+                  list="clients-datalist"
                   placeholder="Ej. Consumidor Final, Pedro Pérez..."
                   value={newClient}
                   onChange={(e) => setNewClient(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
+                <datalist id="clients-datalist">
+                  <option value="Consumidor Final" />
+                  {availableClients.map((c) => (
+                    <option key={c.uuid || c.id} value={c.nombre || c.name} />
+                  ))}
+                </datalist>
               </div>
 
               <div>

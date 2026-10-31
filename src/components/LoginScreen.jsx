@@ -15,8 +15,9 @@ export default function LoginScreen({ onLoginSuccess }) {
     setErrorMessage('');
 
     try {
-      await api.auth.login(email.trim(), password);
-      onLoginSuccess();
+      const data = await api.auth.login(email.trim(), password);
+      const user = data?.user || data?.usuario || api.auth.getUser();
+      onLoginSuccess(user);
     } catch (err) {
       setErrorMessage(err.message || 'Error al iniciar sesión. Verifique sus credenciales.');
     } finally {

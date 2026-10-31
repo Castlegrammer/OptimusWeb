@@ -12,10 +12,28 @@ import ProveedoresModule from './ProveedoresModule';
 import ChangeCalculatorModal from './ChangeCalculatorModal';
 import { Menu, LogOut, Calculator, Sparkles } from 'lucide-react';
 
-export default function DashboardLayout({ onLogout }) {
+export default function DashboardLayout({ user, onLogout }) {
   const [currentModule, setCurrentModule] = useState('inicio');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
+
+  const displayName = user?.nombre || user?.Nombre || user?.name || user?.email?.split('@')[0] || 'Administrador';
+  const displayRole = user?.tipo || user?.Tipo || user?.rol || 'Administrador';
+  const displayEmail = user?.email || user?.Email || '';
+
+  const getInitials = (name, email) => {
+    if (name && typeof name === 'string' && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+    if (email && typeof email === 'string' && email.trim()) {
+      return email.substring(0, 2).toUpperCase();
+    }
+    return 'OP';
+  };
 
   // Tasas en vivo compartidas en todo el sistema
   const [rates, setRates] = useState({
@@ -80,6 +98,7 @@ export default function DashboardLayout({ onLogout }) {
         mobileOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
         onOpenCalculator={() => setShowCalculator(true)}
+        user={user}
       />
 
       {/* Main Panel Content Area */}
@@ -97,7 +116,7 @@ export default function DashboardLayout({ onLogout }) {
 
             <div>
               <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                <span>Optimus360 Bodega</span>
+                <span>Optimus360</span>
                 <span className="text-slate-300">•</span>
                 <span className="text-slate-400 capitalize">{currentModule}</span>
               </div>
@@ -134,24 +153,43 @@ export default function DashboardLayout({ onLogout }) {
               <strong className="font-bold">Bs. {rates.usdt.toFixed(2)}</strong>
             </div>
 
+            {/* Pastilla de Usuario Logueado */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs shadow-2xs">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 shadow-xs uppercase">
+                {getInitials(displayName, displayEmail)}
+              </div>
+              <div className="flex flex-col text-left leading-tight max-w-[120px]">
+                <span className="font-extrabold text-slate-900 text-[11px] truncate" title={displayName}>
+                  {displayName}
+                </span>
+                <span className="text-[9px] text-slate-500 font-medium truncate">
+                  {displayRole}
+                </span>
+              </div>
+            </div>
+
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-950 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 border border-slate-200 rounded-xl hover:bg-rose-50/60 transition-colors"
               title="Cerrar sesión"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Salir</span>
             </button>
 
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white text-xs font-extrabold flex items-center justify-center shadow-md shadow-blue-500/20">
-              360
+            {/* Avatar en Navbar */}
+            <div 
+              className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white text-xs font-extrabold flex items-center justify-center shadow-md shadow-blue-500/20 uppercase"
+              title={`${displayName} (${displayRole})`}
+            >
+              {getInitials(displayName, displayEmail)}
             </div>
           </div>
         </header>
 
         {/* Dynamic Module Rendering */}
         <main className="p-4 sm:p-8 flex-1 max-w-7xl w-full mx-auto">
-          {currentModule === 'inicio' && <OverviewModule onNavigate={setCurrentModule} bcvRate={bcvRate} />}
+          {currentModule === 'inicio' && <OverviewModule onNavigate={setCurrentModule} bcvRate={bcvRate} user={user} />}
           {currentModule === 'ventas' && <VentasModule bcvRate={bcvRate} onOpenCalculator={() => setShowCalculator(true)} />}
           {currentModule === 'compras' && <ComprasModule bcvRate={bcvRate} />}
           {currentModule === 'productos' && <ProductosModule bcvRate={bcvRate} />}

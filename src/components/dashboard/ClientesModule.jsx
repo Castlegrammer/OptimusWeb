@@ -20,123 +20,70 @@ import {
   Clock, 
   Phone,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 
-const STORAGE_KEY = 'optimus360_fiado_clients_v2';
-
-// Datos iniciales de demostración si la libreta está vacía
-const INITIAL_CLIENTS = [
-  {
-    id: 'CLI-01',
-    name: 'Roberto Gómez',
-    nickname: 'El del Taller Mecánico',
-    phone: '+58 412 1234567',
-    debtUsd: 28.50,
-    creditLimit: 60.00,
-    status: 'Al día',
-    history: [
-      { id: 'tx-1', date: '20 Oct 2026', time: '09:15 AM', type: 'fiado', desc: '2 Harinas PAN + 1 Aceite 1L', amountUsd: 5.50, paymentMethod: '-', balanceAfter: 5.50 },
-      { id: 'tx-2', date: '21 Oct 2026', time: '04:30 PM', type: 'fiado', desc: '1 Paquete de Café + 1 Azúcar', amountUsd: 8.00, paymentMethod: '-', balanceAfter: 13.50 },
-      { id: 'tx-3', date: '22 Oct 2026', time: '11:20 AM', type: 'abono', desc: 'Abono en efectivo en la bodega', amountUsd: 10.00, paymentMethod: 'Efectivo USD', balanceAfter: 3.50 },
-      { id: 'tx-4', date: '23 Oct 2026', time: '06:10 PM', type: 'fiado', desc: 'Bulto de refrescos + hielo', amountUsd: 25.00, paymentMethod: '-', balanceAfter: 28.50 },
-    ]
-  },
-  {
-    id: 'CLI-02',
-    name: 'Carmen Silva',
-    nickname: 'Doña Carmen (Piso 2)',
-    phone: '+58 414 7654321',
-    debtUsd: 12.00,
-    creditLimit: 30.00,
-    status: 'Al día',
-    history: [
-      { id: 'tx-5', date: '19 Oct 2026', time: '10:00 AM', type: 'fiado', desc: 'Queso blanco 1kg + Cartón de huevos', amountUsd: 18.00, paymentMethod: '-', balanceAfter: 18.00 },
-      { id: 'tx-6', date: '22 Oct 2026', time: '05:45 PM', type: 'abono', desc: 'Abono de quincena por Pago Móvil', amountUsd: 10.00, paymentMethod: 'Pago Móvil (BCV)', balanceAfter: 8.00 },
-      { id: 'tx-7', date: '24 Oct 2026', time: '08:30 AM', type: 'fiado', desc: 'Pan canilla + Jamón', amountUsd: 4.00, paymentMethod: '-', balanceAfter: 12.00 },
-    ]
-  },
-  {
-    id: 'CLI-03',
-    name: 'Carlos Rivas',
-    nickname: 'El Catire de la Esquina',
-    phone: '+58 424 9876543',
-    debtUsd: 0.00,
-    creditLimit: 50.00,
-    status: 'Solvente',
-    history: [
-      { id: 'tx-8', date: '15 Oct 2026', time: '02:00 PM', type: 'fiado', desc: 'Artículos de limpieza', amountUsd: 15.00, paymentMethod: '-', balanceAfter: 15.00 },
-      { id: 'tx-9', date: '18 Oct 2026', time: '09:00 AM', type: 'abono', desc: 'Pago total de su cuenta', amountUsd: 15.00, paymentMethod: 'Pago Móvil (BCV)', balanceAfter: 0.00 },
-    ]
-  },
-  {
-    id: 'CLI-04',
-    name: 'María Eugenia Rivas',
-    nickname: 'Profa. María',
-    phone: '+58 416 3456789',
-    debtUsd: 34.00,
-    creditLimit: 40.00,
-    status: 'Vencido',
-    history: [
-      { id: 'tx-10', date: '10 Oct 2026', time: '01:10 PM', type: 'fiado', desc: 'Víveres varios de fin de semana', amountUsd: 44.00, paymentMethod: '-', balanceAfter: 44.00 },
-      { id: 'tx-11', date: '16 Oct 2026', time: '12:00 PM', type: 'abono', desc: 'Abono parcial', amountUsd: 10.00, paymentMethod: 'Efectivo Bs', balanceAfter: 34.00 },
-    ]
-  }
-];
+const HISTORIES_STORAGE_KEY = 'optimus360_client_histories_v1';
 
 export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 }) {
-  // Carga inicial desde localStorage
-  const [clients, setClients] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error('Error cargando libreta de fiado:', e);
-    }
-    return INITIAL_CLIENTS;
-  });
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
 
-  // Guardar cada cambio en localStorage
+  // Limpiar cualquier cache viejo con clientes demo precargados
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
-    } catch (e) {
-      console.error('Error guardando libreta de fiado:', e);
-    }
-  }, [clients]);
-
-  // Cargar clientes reales desde la base de datos MySQL en Coolify
-  useEffect(() => {
-    const fetchDbClients = async () => {
-      try {
-        const dbClients = await api.clientes.getAll();
-        if (Array.isArray(dbClients) && dbClients.length > 0) {
-          setClients(prev => {
-            const existingUuids = new Set(prev.map(c => c.uuid || c.id || c.name));
-            const newEntries = dbClients
-              .filter(db => !existingUuids.has(db.uuid) && !existingUuids.has(db.nombre))
-              .map(db => ({
-                id: db.uuid || `CLI-${db.id}`,
-                uuid: db.uuid,
-                name: db.nombre,
-                nickname: db.responsable || db.zona || 'Cliente de base de datos',
-                phone: db.telefono || '+58 ',
-                debtUsd: 0,
-                creditLimit: 50,
-                status: 'Solvente',
-                history: []
-              }));
-            return newEntries.length > 0 ? [...newEntries, ...prev] : prev;
-          });
-        }
-      } catch (err) {
-        console.warn('Aviso: no se pudieron cargar clientes de MySQL:', err);
-      }
-    };
-    fetchDbClients();
+      localStorage.removeItem('optimus360_fiado_clients_v2');
+      localStorage.removeItem('optimus360_fiado_clients');
+    } catch (e) {}
   }, []);
 
-  const [search, setSearch] = useState('');
+  // Cargar clientes reales directamente desde la base de datos MySQL en Coolify
+  const fetchDbClients = async () => {
+    setLoading(true);
+    try {
+      const dbClients = await api.clientes.getAll();
+      let localHistories = {};
+      try {
+        const saved = localStorage.getItem(HISTORIES_STORAGE_KEY);
+        if (saved) localHistories = JSON.parse(saved);
+      } catch (e) {}
+
+      if (Array.isArray(dbClients)) {
+        const mapped = dbClients.map(db => {
+          const cliKey = db.uuid || `CLI-${db.id}`;
+          const savedData = localHistories[cliKey] || localHistories[db.nombre] || {};
+          const debt = savedData.debtUsd !== undefined ? savedData.debtUsd : 0;
+          return {
+            id: cliKey,
+            uuid: db.uuid,
+            name: db.nombre,
+            nickname: db.responsable || db.zona || 'Cliente Registrado',
+            phone: db.telefono || '',
+            debtUsd: debt,
+            creditLimit: savedData.creditLimit || 50,
+            status: debt > 0 ? 'Al día' : 'Solvente',
+            history: savedData.history || []
+          };
+        });
+        setClients(mapped);
+      } else {
+        setClients([]);
+      }
+    } catch (err) {
+      console.warn('Aviso: no se pudieron cargar clientes de MySQL:', err);
+      setClients([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDbClients();
+  }, []);
 
   // Modales
   const [selectedClientForPassbook, setSelectedClientForPassbook] = useState(null);
@@ -216,6 +163,18 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
 
     setClients(updatedClients);
 
+    // Persistir estado de deudas y movimientos del cliente
+    try {
+      const savedHistories = JSON.parse(localStorage.getItem(HISTORIES_STORAGE_KEY) || '{}');
+      savedHistories[client.id] = {
+        debtUsd: newDebt,
+        creditLimit: client.creditLimit,
+        history: [newTx, ...(client.history || [])]
+      };
+      if (client.name) savedHistories[client.name] = savedHistories[client.id];
+      localStorage.setItem(HISTORIES_STORAGE_KEY, JSON.stringify(savedHistories));
+    } catch (e) {}
+
     const receiptData = {
       clientName: client.name,
       clientPhone: client.phone,
@@ -286,6 +245,18 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     });
 
     setClients(updatedClients);
+
+    try {
+      const savedHistories = JSON.parse(localStorage.getItem(HISTORIES_STORAGE_KEY) || '{}');
+      savedHistories[client.id] = {
+        debtUsd: newDebt,
+        creditLimit: client.creditLimit,
+        history: [newTx, ...(client.history || [])]
+      };
+      if (client.name) savedHistories[client.name] = savedHistories[client.id];
+      localStorage.setItem(HISTORIES_STORAGE_KEY, JSON.stringify(savedHistories));
+    } catch (e) {}
+
     setClientForFiado(null);
     setFiadoDesc('');
     setFiadoAmount('');
@@ -302,57 +273,59 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
     showToast(`Se anotaron $${amountInUsd.toFixed(2)} a la libreta de ${client.name}`);
   };
 
-  // 3. NUEVO CLIENTE
-  const handleCreateClient = (e) => {
+  // 3. NUEVO CLIENTE (Guardar en Base de Datos MySQL)
+  const handleCreateClient = async (e) => {
     e.preventDefault();
     if (!newName.trim()) return;
+    setSaving(true);
 
-    const initialDebt = parseFloat(newInitialDebt) || 0;
-    const limit = parseFloat(newCreditLimit) || 50;
+    try {
+      const initialDebt = parseFloat(newInitialDebt) || 0;
+      const limit = parseFloat(newCreditLimit) || 50;
 
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' });
-    const timeStr = now.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const res = await api.clientes.create({
+        nombre: newName.trim(),
+        responsable: newNickname.trim(),
+        telefono: newPhone.trim()
+      });
 
-    const newClient = {
-      id: `CLI-0${clients.length + 1}`,
-      name: newName.trim(),
-      nickname: newNickname.trim() || 'Cliente de bodega',
-      phone: newPhone.trim() || '+58 ',
-      debtUsd: initialDebt,
-      creditLimit: limit,
-      status: initialDebt > 0 ? 'Al día' : 'Solvente',
-      history: initialDebt > 0 ? [
-        {
-          id: `tx-${Date.now()}`,
-          date: dateStr,
-          time: timeStr,
-          type: 'fiado',
-          desc: 'Saldo anotado anterior (migración)',
-          amountUsd: initialDebt,
-          paymentMethod: '-',
-          balanceAfter: initialDebt
-        }
-      ] : []
-    };
+      const newCliId = res?.uuid || `CLI-${res?.id || Date.now()}`;
+      if (initialDebt > 0) {
+        try {
+          const savedHistories = JSON.parse(localStorage.getItem(HISTORIES_STORAGE_KEY) || '{}');
+          savedHistories[newCliId] = {
+            debtUsd: initialDebt,
+            creditLimit: limit,
+            history: [{
+              id: `tx-${Date.now()}`,
+              date: new Date().toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' }),
+              time: new Date().toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true }),
+              type: 'fiado',
+              desc: 'Saldo anotado anterior (migración)',
+              amountUsd: initialDebt,
+              paymentMethod: '-',
+              balanceAfter: initialDebt
+            }]
+          };
+          savedHistories[newName.trim()] = savedHistories[newCliId];
+          localStorage.setItem(HISTORIES_STORAGE_KEY, JSON.stringify(savedHistories));
+        } catch (e) {}
+      }
 
-    setClients([newClient, ...clients]);
+      setShowNewClientModal(false);
+      setNewName('');
+      setNewNickname('');
+      setNewPhone('');
+      setNewCreditLimit('50');
+      setNewInitialDebt('0');
 
-    // Guardar también en la base de datos MySQL (API REST)
-    api.clientes.create({
-      nombre: newName.trim(),
-      responsable: newNickname.trim(),
-      telefono: newPhone.trim()
-    }).catch(err => console.error('Error al guardar cliente en MySQL:', err));
-
-    setShowNewClientModal(false);
-    setNewName('');
-    setNewNickname('');
-    setNewPhone('');
-    setNewCreditLimit('50');
-    setNewInitialDebt('0');
-
-    showToast(`Cliente ${newClient.name} agregado a la libreta.`);
+      await fetchDbClients();
+      showToast(`Cliente "${newName.trim()}" guardado en la base de datos.`);
+    } catch (err) {
+      alert(err.message || 'Error al guardar cliente en MySQL');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // 4. WHATSAPP
@@ -427,6 +400,15 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={fetchDbClients}
+            disabled={loading}
+            className="p-2.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-all"
+            title="Recargar clientes desde la base de datos"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
           <button
             onClick={() => setShowNewClientModal(true)}
             className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 shrink-0"
@@ -549,10 +531,23 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredClients.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-slate-400">
-                    No se encontraron clientes con ese nombre o apodo.
+                  <td colSpan="6" className="py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                      <span>Consultando clientes en la base de datos...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredClients.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Users className="w-8 h-8 text-slate-300" />
+                      <p className="font-bold text-slate-700 text-sm">No hay clientes registrados en la base de datos</p>
+                      <p className="text-slate-400 text-xs">Haz clic en "Nuevo Cliente" para agregar a la libreta y base de datos.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -1154,7 +1149,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
                     autoFocus
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Ej. Roberto Gómez"
+                    placeholder="Ej. Pedro Pérez, María González..."
                     className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>

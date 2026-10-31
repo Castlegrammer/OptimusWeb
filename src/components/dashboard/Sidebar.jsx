@@ -15,7 +15,32 @@ import {
   Sparkles
 } from 'lucide-react';
 
-export default function Sidebar({ currentModule, onChangeModule, onLogout, mobileOpen, onCloseMobile, onOpenCalculator }) {
+export default function Sidebar({ 
+  currentModule, 
+  onChangeModule, 
+  onLogout, 
+  mobileOpen, 
+  onCloseMobile, 
+  onOpenCalculator,
+  user 
+}) {
+  const displayName = user?.nombre || user?.Nombre || user?.name || user?.email?.split('@')[0] || 'Administrador';
+  const displayRole = user?.tipo || user?.Tipo || user?.rol || 'Administrador';
+  const displayEmail = user?.email || user?.Email || '';
+
+  const getInitials = (name, email) => {
+    if (name && typeof name === 'string' && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+    if (email && typeof email === 'string' && email.trim()) {
+      return email.substring(0, 2).toUpperCase();
+    }
+    return 'OP';
+  };
   const modules = [
     { id: 'inicio', name: 'Dashboard / KPIs', icon: LayoutDashboard },
     { id: 'ventas', name: 'Ventas & Caja', icon: ShoppingCart, badge: 'POS' },
@@ -139,16 +164,18 @@ export default function Sidebar({ currentModule, onChangeModule, onLogout, mobil
           {/* User / Business Card */}
           <div className="p-3 rounded-2xl bg-gradient-to-br from-white via-slate-50 to-blue-50/40 border border-slate-200/90 shadow-2xs flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 text-white text-xs font-extrabold flex items-center justify-center shrink-0 shadow-md shadow-blue-500/25">
-                BO
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 text-white text-xs font-extrabold flex items-center justify-center shrink-0 shadow-md shadow-blue-500/25 uppercase">
+                {getInitials(displayName, displayEmail)}
               </div>
-              <div className="min-w-0">
-                <div className="text-xs font-extrabold text-slate-900 truncate leading-tight">
-                  Bodega Mi Esfuerzo
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-extrabold text-slate-900 truncate leading-tight" title={displayName}>
+                  {displayName}
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse" />
-                  <span className="font-semibold text-slate-600">Caja Principal • Activa</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse shrink-0" />
+                  <span className="font-semibold text-slate-600 truncate">
+                    {displayRole} • En línea
+                  </span>
                 </div>
               </div>
             </div>
