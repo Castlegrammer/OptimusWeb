@@ -268,11 +268,13 @@ export const api = {
       try {
         const query = search ? `?search=${encodeURIComponent(search)}` : '';
         const res = await request(`/clientes${query}`);
-        if (res && res.data) return res.data;
+        if (Array.isArray(res)) return res;
+        if (res && Array.isArray(res.data)) return res.data;
+        if (res && Array.isArray(res.clientes)) return res.clientes;
       } catch (err) {
         try {
           const syncRes = await request('/sync/pull?since=2000-01-01');
-          if (syncRes && syncRes.data && syncRes.data.clientes) {
+          if (syncRes && syncRes.data && Array.isArray(syncRes.data.clientes)) {
             let list = syncRes.data.clientes.filter((c) => !c.eliminado);
             if (search) {
               const s = search.toLowerCase();
@@ -337,11 +339,13 @@ export const api = {
       try {
         const query = search ? `?search=${encodeURIComponent(search)}` : '';
         const res = await request(`/proveedores${query}`);
-        if (res && res.data) return res.data;
+        if (Array.isArray(res)) return res;
+        if (res && Array.isArray(res.data)) return res.data;
+        if (res && Array.isArray(res.proveedores)) return res.proveedores;
       } catch (err) {
         try {
           const syncRes = await request('/sync/pull?since=2000-01-01');
-          if (syncRes && syncRes.data && syncRes.data.proveedores) {
+          if (syncRes && syncRes.data && Array.isArray(syncRes.data.proveedores)) {
             let list = syncRes.data.proveedores.filter((p) => !p.eliminado);
             if (search) {
               const s = search.toLowerCase();

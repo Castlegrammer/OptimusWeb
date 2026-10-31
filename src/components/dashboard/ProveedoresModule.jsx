@@ -26,7 +26,7 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
     setLoading(true);
     try {
       const data = await api.proveedores.getAll(search);
-      setSuppliers(data);
+      setSuppliers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error al cargar proveedores de MySQL:', err);
       showNotification(err.message || 'No se pudieron cargar los proveedores.', 'error');
