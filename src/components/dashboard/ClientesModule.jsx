@@ -27,9 +27,12 @@ import {
 } from 'lucide-react';
 
 const HISTORIES_STORAGE_KEY = 'optimus360_client_histories_v1';
-const CLIENTS_CACHE_KEY = 'optimus360_db_clients_cache_v1';
 
 export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 }) {
+  const currentUser = api.auth.getUser();
+  const userKey = currentUser?.id || currentUser?.email || 'default';
+  const CLIENTS_CACHE_KEY = `optimus360_db_clients_cache_${userKey}`;
+
   const [clients, setClients] = useState(() => {
     try {
       const cached = localStorage.getItem(CLIENTS_CACHE_KEY);
@@ -60,27 +63,34 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
         if (saved) localHistories = JSON.parse(saved);
       } catch (e) {}
 
-      if (Array.isArray(dbClients) && dbClients.length > 0) {
-        const mapped = dbClients.map(db => {
-          const cliKey = db.uuid || `CLI-${db.id}`;
-          const savedData = localHistories[cliKey] || localHistories[db.nombre] || {};
-          const debt = savedData.debtUsd !== undefined ? savedData.debtUsd : 0;
-          return {
-            id: cliKey,
-            uuid: db.uuid,
-            name: db.nombre,
-            nickname: db.responsable || db.zona || 'Cliente Registrado',
-            phone: db.telefono || '',
-            debtUsd: debt,
-            creditLimit: savedData.creditLimit || 50,
-            status: debt > 0 ? 'Al día' : 'Solvente',
-            history: savedData.history || []
-          };
-        });
-        setClients(mapped);
-        try {
-          localStorage.setItem(CLIENTS_CACHE_KEY, JSON.stringify(mapped));
-        } catch (e) {}
+      if (Array.isArray(dbClients)) {
+        if (dbClients.length > 0) {
+          const mapped = dbClients.map(db => {
+            const cliKey = db.uuid || `CLI-${db.id}`;
+            const savedData = localHistories[cliKey] || localHistories[db.nombre] || {};
+            const debt = savedData.debtUsd !== undefined ? savedData.debtUsd : 0;
+            return {
+              id: cliKey,
+              uuid: db.uuid,
+              name: db.nombre,
+              nickname: db.responsable || db.zona || 'Cliente Registrado',
+              phone: db.telefono || '',
+              debtUsd: debt,
+              creditLimit: savedData.creditLimit || 50,
+              status: debt > 0 ? 'Al día' : 'Solvente',
+              history: savedData.history || []
+            };
+          });
+          setClients(mapped);
+          try {
+            localStorage.setItem(CLIENTS_CACHE_KEY, JSON.stringify(mapped));
+          } catch (e) {}
+        } else {
+          setClients([]);
+          try {
+            localStorage.removeItem(CLIENTS_CACHE_KEY);
+          } catch (e) {}
+        }
       }
     } catch (err) {
       console.warn('Aviso: no se pudieron cargar clientes de MySQL:', err);

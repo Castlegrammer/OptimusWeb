@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Truck, Plus, Search, Phone, FileText, X, Building2, Loader2, RefreshCw, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
-const PROV_STORAGE_KEY = 'optimus360_suppliers_cache_v1';
-
 export default function ProveedoresModule({ bcvRate = 884.75 }) {
+  const currentUser = api.auth.getUser();
+  const userKey = currentUser?.id || currentUser?.email || 'default';
+  const PROV_STORAGE_KEY = `optimus360_suppliers_cache_${userKey}`;
+
   const [suppliers, setSuppliers] = useState(() => {
     try {
       const cached = localStorage.getItem(PROV_STORAGE_KEY);
@@ -34,11 +36,18 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
     setLoading(true);
     try {
       const data = await api.proveedores.getAll(search);
-      if (Array.isArray(data) && data.length > 0) {
-        setSuppliers(data);
-        try {
-          localStorage.setItem(PROV_STORAGE_KEY, JSON.stringify(data));
-        } catch (e) {}
+      if (Array.isArray(data)) {
+        if (data.length > 0) {
+          setSuppliers(data);
+          try {
+            localStorage.setItem(PROV_STORAGE_KEY, JSON.stringify(data));
+          } catch (e) {}
+        } else {
+          setSuppliers([]);
+          try {
+            localStorage.removeItem(PROV_STORAGE_KEY);
+          } catch (e) {}
+        }
       }
     } catch (err) {
       console.error('Error al cargar proveedores de MySQL:', err);
