@@ -2,8 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { FolderTree, Plus, X, Trash2, RefreshCw, Loader2, Package, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
+const CATS_CACHE_KEY = 'optimus360_categories_cache_v1';
+
 export default function CategoriasModule() {
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(() => {
+    try {
+      const cached = localStorage.getItem(CATS_CACHE_KEY);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
@@ -28,7 +36,12 @@ export default function CategoriasModule() {
     setLoading(true);
     try {
       const data = await api.categorias.getAll();
-      setCategories(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setCategories(data);
+        try {
+          localStorage.setItem(CATS_CACHE_KEY, JSON.stringify(data));
+        } catch (e) {}
+      }
     } catch (err) {
       console.error('Error al cargar categorías:', err);
     } finally {
@@ -55,11 +68,28 @@ export default function CategoriasModule() {
     setModalError('');
 
     try {
-      await api.categorias.create(name.trim());
-      const catName = name.trim();
+      const cleanName = name.trim();
+      const res = await api.categorias.create(cleanName);
+
+      const newCategoryObj = {
+        id: res?.id || Date.now(),
+        uuid: res?.uuid || `cat-${Date.now()}`,
+        nombre: cleanName,
+        total_productos: 0
+      };
+
+      // Actualizar inmediatamente en pantalla y guardar en cache
+      setCategories(prev => {
+        const updated = [newCategoryObj, ...prev.filter(c => c.nombre.toLowerCase() !== cleanName.toLowerCase())];
+        try {
+          localStorage.setItem(CATS_CACHE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+
       setName('');
       setShowModal(false);
-      showNotification(`Categoría "${catName}" creada exitosamente.`);
+      showNotification(`Categoría "${cleanName}" creada exitosamente.`);
       await fetchCategories();
     } catch (err) {
       setModalError(err.message || 'No se pudo crear la categoría.');
@@ -72,7 +102,13 @@ export default function CategoriasModule() {
     if (!window.confirm(`¿Estás seguro de eliminar la categoría "${catName}"?`)) return;
     try {
       await api.categorias.delete(uuid);
-      setCategories(categories.filter(c => c.uuid !== uuid));
+      setCategories(prev => {
+        const updated = prev.filter(c => (c.uuid || c.id) !== uuid && c.nombre !== catName);
+        try {
+          localStorage.setItem(CATS_CACHE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
       showNotification(`Categoría "${catName}" eliminada correctamente.`);
     } catch (err) {
       showNotification(err.message || 'Error al eliminar la categoría.', 'error');

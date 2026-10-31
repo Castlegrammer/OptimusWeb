@@ -502,8 +502,20 @@ export const api = {
   // Categorías
   categorias: {
     async getAll() {
-      const res = await request('/categorias');
-      return res.data || [];
+      try {
+        const res = await request('/categorias');
+        if (Array.isArray(res)) return res;
+        if (res && Array.isArray(res.data)) return res.data;
+        if (res && Array.isArray(res.categorias)) return res.categorias;
+      } catch (err) {
+        try {
+          const syncRes = await request('/sync/pull?since=2000-01-01');
+          if (syncRes && syncRes.data && Array.isArray(syncRes.data.categorias)) {
+            return syncRes.data.categorias.filter((c) => !c.eliminado);
+          }
+        } catch (e2) {}
+      }
+      return [];
     },
     async create(nombre) {
       return await request('/categorias', {
