@@ -2,8 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Truck, Plus, Search, Phone, FileText, X, Building2, Loader2, RefreshCw, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
+const PROV_STORAGE_KEY = 'optimus360_suppliers_cache_v1';
+
 export default function ProveedoresModule({ bcvRate = 884.75 }) {
-  const [suppliers, setSuppliers] = useState([]);
+  const [suppliers, setSuppliers] = useState(() => {
+    try {
+      const cached = localStorage.getItem(PROV_STORAGE_KEY);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -26,10 +34,14 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
     setLoading(true);
     try {
       const data = await api.proveedores.getAll(search);
-      setSuppliers(Array.isArray(data) ? data : []);
+      if (Array.isArray(data) && data.length > 0) {
+        setSuppliers(data);
+        try {
+          localStorage.setItem(PROV_STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {}
+      }
     } catch (err) {
       console.error('Error al cargar proveedores de MySQL:', err);
-      showNotification(err.message || 'No se pudieron cargar los proveedores.', 'error');
     } finally {
       setLoading(false);
     }
@@ -60,12 +72,30 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
     setModalError('');
 
     try {
-      await api.proveedores.create({
+      const newProvData = {
         nombre: name.trim(),
         responsable: contact.trim() || 'Contacto Comercial',
         direccion: rif.trim() || '',
         telefono: phone.trim() || '',
         zona: 'Principal'
+      };
+
+      const res = await api.proveedores.create(newProvData);
+
+      const addedItem = {
+        id: res?.id || Date.now(),
+        uuid: res?.uuid || `prov-${Date.now()}`,
+        ...newProvData,
+        fecha_creacion: new Date().toISOString().replace('T', ' ').substring(0, 19)
+      };
+
+      // Actualizar inmediatamente en pantalla y guardar en cache local
+      setSuppliers(prev => {
+        const updated = [addedItem, ...prev.filter(p => (p.uuid || p.id) !== addedItem.uuid)];
+        try {
+          localStorage.setItem(PROV_STORAGE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
       });
 
       const addedName = name.trim();
@@ -87,7 +117,13 @@ export default function ProveedoresModule({ bcvRate = 884.75 }) {
     if (!window.confirm(`¿Estás seguro de eliminar al proveedor "${provName}"?`)) return;
     try {
       await api.proveedores.delete(uuid);
-      setSuppliers(prev => prev.filter(p => (p.uuid || p.id) !== uuid));
+      setSuppliers(prev => {
+        const updated = prev.filter(p => (p.uuid || p.id) !== uuid);
+        try {
+          localStorage.setItem(PROV_STORAGE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
       showNotification(`Proveedor "${provName}" eliminado correctamente.`);
     } catch (err) {
       showNotification(err.message || 'Error al eliminar proveedor.', 'error');

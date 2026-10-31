@@ -27,9 +27,16 @@ import {
 } from 'lucide-react';
 
 const HISTORIES_STORAGE_KEY = 'optimus360_client_histories_v1';
+const CLIENTS_CACHE_KEY = 'optimus360_db_clients_cache_v1';
 
 export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 }) {
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState(() => {
+    try {
+      const cached = localStorage.getItem(CLIENTS_CACHE_KEY);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -53,7 +60,7 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
         if (saved) localHistories = JSON.parse(saved);
       } catch (e) {}
 
-      if (Array.isArray(dbClients)) {
+      if (Array.isArray(dbClients) && dbClients.length > 0) {
         const mapped = dbClients.map(db => {
           const cliKey = db.uuid || `CLI-${db.id}`;
           const savedData = localHistories[cliKey] || localHistories[db.nombre] || {};
@@ -71,12 +78,12 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
           };
         });
         setClients(mapped);
-      } else {
-        setClients([]);
+        try {
+          localStorage.setItem(CLIENTS_CACHE_KEY, JSON.stringify(mapped));
+        } catch (e) {}
       }
     } catch (err) {
       console.warn('Aviso: no se pudieron cargar clientes de MySQL:', err);
-      setClients([]);
     } finally {
       setLoading(false);
     }
@@ -293,28 +300,50 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       });
 
       const newCliId = res?.uuid || `CLI-${res?.id || Date.now()}`;
+      const newClientObj = {
+        id: newCliId,
+        uuid: res?.uuid || newCliId,
+        name: newName.trim(),
+        nickname: newNickname.trim() || 'Cliente Registrado',
+        phone: newPhone.trim(),
+        debtUsd: initialDebt,
+        creditLimit: limit,
+        status: initialDebt > 0 ? 'Al día' : 'Solvente',
+        history: initialDebt > 0 ? [{
+          id: `tx-${Date.now()}`,
+          date: new Date().toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' }),
+          time: new Date().toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          type: 'fiado',
+          desc: 'Saldo anotado anterior (migración)',
+          amountUsd: initialDebt,
+          paymentMethod: '-',
+          balanceAfter: initialDebt
+        }] : []
+      };
+
+      // Añadir inmediatamente al estado y cache para que nunca desaparezca
+      setClients(prev => {
+        const updated = [newClientObj, ...prev.filter(c => c.id !== newCliId && c.name !== newName.trim())];
+        try {
+          localStorage.setItem(CLIENTS_CACHE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+
       if (initialDebt > 0) {
         try {
           const savedHistories = JSON.parse(localStorage.getItem(HISTORIES_STORAGE_KEY) || '{}');
           savedHistories[newCliId] = {
             debtUsd: initialDebt,
             creditLimit: limit,
-            history: [{
-              id: `tx-${Date.now()}`,
-              date: new Date().toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' }),
-              time: new Date().toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true }),
-              type: 'fiado',
-              desc: 'Saldo anotado anterior (migración)',
-              amountUsd: initialDebt,
-              paymentMethod: '-',
-              balanceAfter: initialDebt
-            }]
+            history: newClientObj.history
           };
           savedHistories[newName.trim()] = savedHistories[newCliId];
           localStorage.setItem(HISTORIES_STORAGE_KEY, JSON.stringify(savedHistories));
         } catch (e) {}
       }
 
+      const clientAddedName = newName.trim();
       setShowNewClientModal(false);
       setNewName('');
       setNewNickname('');
@@ -322,8 +351,8 @@ export default function ClientesModule({ bcvRate = 884.75, usdtRate = 1000.60 })
       setNewCreditLimit('50');
       setNewInitialDebt('0');
 
+      showToast(`Cliente "${clientAddedName}" guardado en la base de datos.`);
       await fetchDbClients();
-      showToast(`Cliente "${newName.trim()}" guardado en la base de datos.`);
     } catch (err) {
       setNewClientError(err.message || 'No se pudo guardar el cliente. Intenta nuevamente.');
     } finally {
