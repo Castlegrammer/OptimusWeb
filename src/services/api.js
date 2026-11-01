@@ -179,6 +179,22 @@ export const api = {
         return null;
       }
     },
+    setUser(userData) {
+      if (userData) {
+        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+      }
+    },
+    async updateProfile({ nombre, moneda }) {
+      const res = await request('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ nombre, moneda }),
+      });
+      const updatedUser = res?.user || res?.usuario || res?.data?.user;
+      if (updatedUser) {
+        localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+      }
+      return updatedUser || res;
+    },
     isAuthenticated() {
       return !!localStorage.getItem(TOKEN_KEY);
     },

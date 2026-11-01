@@ -12,29 +12,11 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 
-export default function OverviewModule({ onNavigate, bcvRate = 884.75, user }) {
+export default function OverviewModule({ onNavigate, bcvRate = 884.75 }) {
   const [counts, setCounts] = useState({ productos: 0, clientes: 0, ventas: 0 });
   const [recentSales, setRecentSales] = useState([]);
   const [lastSync, setLastSync] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const displayName = user?.nombre || user?.Nombre || user?.name || user?.email?.split('@')[0] || 'Administrador';
-  const displayRole = user?.tipo || user?.Tipo || user?.rol || 'Administrador';
-  const displayEmail = user?.email || user?.Email || '';
-
-  const getUserInitials = (name, email) => {
-    if (name && typeof name === 'string' && name.trim()) {
-      const parts = name.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        return (parts[0][0] + parts[1][0]).toUpperCase();
-      }
-      return parts[0].substring(0, 2).toUpperCase();
-    }
-    if (email && typeof email === 'string' && email.trim()) {
-      return email.substring(0, 2).toUpperCase();
-    }
-    return 'OP';
-  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -128,30 +110,6 @@ export default function OverviewModule({ onNavigate, bcvRate = 884.75, user }) {
 
   return (
     <div className="space-y-6">
-      
-      {/* Saludo y Datos de la Sesión del Usuario */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 backdrop-blur-xs p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 text-white font-extrabold flex items-center justify-center text-xs shadow-md shadow-blue-500/25 uppercase shrink-0">
-            {getUserInitials(displayName, displayEmail)}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">
-                ¡Bienvenido, {displayName}!
-              </h2>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Sesión activa como <span className="font-bold text-slate-700">{displayRole}</span> {displayEmail ? `(${displayEmail})` : ''}
-            </p>
-          </div>
-        </div>
-        <div className="text-right sm:border-l sm:border-slate-100 sm:pl-4 flex sm:flex-col items-center sm:items-end justify-between text-xs text-slate-500">
-          <span className="text-[11px] font-semibold text-slate-400">Terminal de Control</span>
-          <span className="font-mono font-bold text-blue-600">Optimus360 Cloud</span>
-        </div>
-      </div>
 
       {/* 1. Real-time BCV, Euro and USDT Rates Widget */}
       <BcvExchangeWidget />

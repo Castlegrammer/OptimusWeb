@@ -92,6 +92,7 @@ export default function App() {
   return (
     <DashboardLayout 
       user={currentUser}
+      onUpdateUser={(updated) => setCurrentUser(updated)}
       onLogout={handleLogout} 
     />
   );
