@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Search, QrCode, X, Trash2, Edit2, RefreshCw, Loader2, Camera, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Package, Plus, Search, QrCode, X, Trash2, Edit2, RefreshCw, Loader2, Camera, AlertCircle, CheckCircle2, Barcode, Tag } from 'lucide-react';
 import api from '../../services/api';
 import BarcodeScannerModal from '../common/BarcodeScannerModal';
 
@@ -107,10 +107,12 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
 
   const handleOpenAddModal = () => {
     setModalError('');
+    fetchCategories();
+    fetchSuppliers();
     if (categories.length > 0 && !newCategory) {
       setNewCategory(categories[0].nombre);
     } else if (categories.length === 0) {
-      setNewCategory('General');
+      setNewCategory('');
     }
     setShowAddModal(true);
   };
@@ -155,6 +157,8 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
   };
 
   const handleStartEdit = (item) => {
+    fetchCategories();
+    fetchSuppliers();
     setEditingProduct(item);
     setEditName(item.nombre || '');
     
@@ -452,58 +456,80 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Código de barras con botón de escanear */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-700 font-bold">Código / Barras:</label>
-                    <button
-                      type="button"
-                      onClick={() => setScannerTarget('newSku')}
-                      className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
-                      title="Escanear con cámara"
-                    >
-                      <Camera className="w-3 h-3" />
-                      <span>Escanear</span>
-                    </button>
-                  </div>
-                  <div className="relative">
+              {/* Código de barras con botón de escanear destacado */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-700 font-bold flex items-center gap-1.5">
+                    <Barcode className="w-4 h-4 text-blue-600" />
+                    <span>Código de Barras / SKU:</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-medium">Lector USB o Cámara</span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
                     <input
                       type="text"
-                      placeholder="759... o escanea"
+                      placeholder="Ej. 7591234567890 o escanea aquí"
                       value={newSku}
                       onChange={(e) => setNewSku(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-xl pl-3 pr-8 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                        }
+                      }}
+                      className="w-full bg-white border border-slate-300 rounded-xl pl-3.5 pr-8 py-2 text-slate-900 font-mono text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setScannerTarget('newSku')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 p-1"
-                      title="Escanear código con cámara"
-                    >
-                      <QrCode className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Categoría desde la BD del usuario */}
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Categoría:</label>
-                  <select
-                    required
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                  >
-                    {categories.length === 0 ? (
-                      <option value="General">General (Sin categorías en tu BD)</option>
-                    ) : (
-                      categories.map((c) => (
-                        <option key={c.uuid || c.id} value={c.nombre}>{c.nombre}</option>
-                      ))
+                    {newSku && (
+                      <button
+                        type="button"
+                        onClick={() => setNewSku('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
+                        title="Borrar código"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     )}
-                  </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setScannerTarget('newSku')}
+                    className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all shrink-0 cursor-pointer text-xs"
+                    title="Escanear con la cámara del dispositivo"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Escanear</span>
+                  </button>
                 </div>
+              </div>
+
+              {/* Categoría desde la BD del usuario */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1.5">
+                  <Tag className="w-4 h-4 text-indigo-600" />
+                  <span>Categoría:</span>
+                </label>
+                <select
+                  required
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs cursor-pointer"
+                >
+                  <option value="" disabled>-- Selecciona una categoría --</option>
+                  {categories.length === 0 ? (
+                    <option value="General">General (Sin categorías creadas en tu BD)</option>
+                  ) : (
+                    categories.map((c) => (
+                      <option key={c.uuid || c.id} value={c.nombre}>
+                        {c.nombre}
+                      </option>
+                    ))
+                  )}
+                </select>
+                {categories.length === 0 && (
+                  <p className="text-[10px] text-amber-600 mt-1 font-medium">
+                    Tip: Ve al módulo de Categorías para crear tus propias categorías en la base de datos.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -627,58 +653,75 @@ export default function ProductosModule({ bcvRate = 884.75 }) {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Código de barras con botón de escanear */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-700 font-bold">Código / Barras:</label>
-                    <button
-                      type="button"
-                      onClick={() => setScannerTarget('editSku')}
-                      className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
-                      title="Escanear con cámara"
-                    >
-                      <Camera className="w-3 h-3" />
-                      <span>Escanear</span>
-                    </button>
-                  </div>
-                  <div className="relative">
+              {/* Código de barras con botón de escanear destacado */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-700 font-bold flex items-center gap-1.5">
+                    <Barcode className="w-4 h-4 text-blue-600" />
+                    <span>Código de Barras / SKU:</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-medium">Lector USB o Cámara</span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
                     <input
                       type="text"
-                      placeholder="759... o escanea"
+                      placeholder="Ej. 7591234567890 o escanea aquí"
                       value={editSku}
                       onChange={(e) => setEditSku(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-xl pl-3 pr-8 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                        }
+                      }}
+                      className="w-full bg-white border border-slate-300 rounded-xl pl-3.5 pr-8 py-2 text-slate-900 font-mono text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setScannerTarget('editSku')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 p-1"
-                      title="Escanear código con cámara"
-                    >
-                      <QrCode className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Categoría desde la BD del usuario */}
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Categoría:</label>
-                  <select
-                    required
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                  >
-                    {categories.length === 0 ? (
-                      <option value="General">General (Sin categorías en tu BD)</option>
-                    ) : (
-                      categories.map((c) => (
-                        <option key={c.uuid || c.id} value={c.nombre}>{c.nombre}</option>
-                      ))
+                    {editSku && (
+                      <button
+                        type="button"
+                        onClick={() => setEditSku('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
+                        title="Borrar código"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     )}
-                  </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setScannerTarget('editSku')}
+                    className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all shrink-0 cursor-pointer text-xs"
+                    title="Escanear con la cámara del dispositivo"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Escanear</span>
+                  </button>
                 </div>
+              </div>
+
+              {/* Categoría desde la BD del usuario */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1.5">
+                  <Tag className="w-4 h-4 text-indigo-600" />
+                  <span>Categoría:</span>
+                </label>
+                <select
+                  required
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs cursor-pointer"
+                >
+                  <option value="" disabled>-- Selecciona una categoría --</option>
+                  {categories.length === 0 ? (
+                    <option value="General">General (Sin categorías creadas en tu BD)</option>
+                  ) : (
+                    categories.map((c) => (
+                      <option key={c.uuid || c.id} value={c.nombre}>
+                        {c.nombre}
+                      </option>
+                    ))
+                  )}
+                </select>
               </div>
 
               <div>
