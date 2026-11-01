@@ -14,7 +14,11 @@ import {
   Package,
   Tag,
   Boxes,
-  User
+  User,
+  Eye,
+  Calendar,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -24,8 +28,9 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   
-  // Modal de Venta
+  // Modales
   const [showNewSaleModal, setShowNewSaleModal] = useState(false);
+  const [viewingSale, setViewingSale] = useState(null);
   const [modalError, setModalError] = useState('');
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: '' }
 
@@ -261,10 +266,15 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
       }
 
       const totalSale = finalItems.reduce((acc, curr) => acc + (parseFloat(curr.total) || 0), 0);
+      const totalBsSale = totalSale * bcvRate;
 
+      // 1. Guardar la venta en el backend central (inserta en Ventas, VentaDetalles y descuenta en Productos)
       await api.ventas.create({
         cliente: newClient.trim() || 'Consumidor Final',
         total: totalSale,
+        total_usd: totalSale,
+        total_bs: totalBsSale,
+        tasa_bcv: bcvRate,
         inicial: totalSale,
         detalles: finalItems.map(item => ({
           producto_uuid: item.producto_uuid || null,
@@ -276,12 +286,12 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
         }))
       });
 
-      // Descontar inventario de forma inmediata y directa en los productos de la BD
+      // 2. Descontar inventario de forma complementaria directa para asegurar el resultado inmediato
       for (const item of finalItems) {
         if (item.cantidad > 0) {
           const matchProd = availableProducts.find(p => 
             (item.producto_uuid && p.uuid === item.producto_uuid) ||
-            (item.producto_id && p.id === item.producto_id) ||
+            (item.producto_id && String(p.id) === String(item.producto_id)) ||
             (p.nombre && p.nombre.toLowerCase() === item.producto.toLowerCase())
           );
           if (matchProd) {
@@ -304,7 +314,7 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
       setSelectedProductCustom('');
       setItemQuantity('1');
       setItemPrice('');
-      showNotification(`Venta de $${totalSale.toFixed(2)} registrada con éxito e inventario descontado.`);
+      showNotification(`Venta de $${totalSale.toFixed(2)} (Bs. ${totalBsSale.toLocaleString('es-VE', { minimumFractionDigits: 2 })}) registrada exitosamente.`);
       
       // Recargar ventas y productos para ver el stock actualizado
       await fetchSales();
@@ -319,7 +329,9 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
   const filtered = salesList.filter(s => {
     const cli = s.cliente || '';
     const idStr = String(s.id || s.uuid || '');
-    return cli.toLowerCase().includes(search.toLowerCase()) || idStr.toLowerCase().includes(search.toLowerCase());
+    const resumen = s.productos_resumen || '';
+    const term = search.toLowerCase();
+    return cli.toLowerCase().includes(term) || idStr.toLowerCase().includes(term) || resumen.toLowerCase().includes(term);
   });
 
   return (
@@ -354,6 +366,7 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
             onClick={() => {
               fetchSales();
               fetchAvailableProducts();
+              fetchAvailableClients();
             }}
             disabled={loading}
             className="p-2.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-all cursor-pointer"
@@ -379,12 +392,12 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por cliente o número de ticket..."
+          placeholder="Buscar por cliente, producto o número de ticket..."
           className="w-full bg-white border border-slate-300/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
         />
       </div>
 
-      {/* Sales Table */}
+      {/* Sales Table con Productos, Cantidades, Dólares y Bolívares */}
       <div className="bg-white/95 backdrop-blur-xs rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs">
         {loading ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-3 text-slate-400 text-xs">
@@ -405,29 +418,59 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
                   <th className="py-3.5 px-5">Ticket / Ref</th>
                   <th className="py-3.5 px-4">Fecha</th>
                   <th className="py-3.5 px-4">Cliente</th>
-                  <th className="py-3.5 px-4">Monto USD</th>
-                  <th className="py-3.5 px-4">Equivalente BCV</th>
-                  <th className="py-3.5 px-5 text-right">Estado</th>
+                  <th className="py-3.5 px-4">Productos Vendidos (Detalle)</th>
+                  <th className="py-3.5 px-4">Monto USD ($)</th>
+                  <th className="py-3.5 px-4">Total Bolívares (BCV)</th>
+                  <th className="py-3.5 px-5 text-right">Comprobante</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((s) => {
-                  const total = Number(s.total) || 0;
-                  const totalBs = (total * bcvRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  const total = Number(s.total ?? s.Total ?? s.total_usd ?? s.monto ?? 0);
+                  const totalBsVal = Number(s.total_bs ?? s.TotalBs ?? (total * bcvRate)) || (total * bcvRate);
+                  const totalBsFormatted = totalBsVal.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  
+                  const resumen = s.productos_resumen || (Array.isArray(s.detalles) && s.detalles.length > 0 ? s.detalles.map(d => `${d.cantidad}x ${d.producto}`).join(', ') : (s.concepto || 'Venta Mostrador'));
+                  const cantTotal = s.total_cantidad || (Array.isArray(s.detalles) && s.detalles.length > 0 ? s.detalles.reduce((acc, d) => acc + (Number(d.cantidad) || 1), 0) : 1);
 
                   return (
                     <tr key={s.uuid || s.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-5 font-mono font-bold text-blue-600">
+                      <td className="py-3.5 px-5 font-mono font-bold text-blue-600 whitespace-nowrap">
                         #{s.id ? String(s.id).padStart(4, '0') : (s.uuid ? s.uuid.substring(0, 8) : 'VENTA')}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">{s.fecha || 'Reciente'}</td>
-                      <td className="py-3.5 px-4 font-bold text-slate-900">{s.cliente || 'Consumidor Final'}</td>
-                      <td className="py-3.5 px-4 font-mono font-extrabold text-slate-950 text-sm">${total.toFixed(2)}</td>
-                      <td className="py-3.5 px-4 font-mono font-bold text-emerald-800">Bs. {totalBs}</td>
-                      <td className="py-3.5 px-5 text-right">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-50 text-emerald-800 border-emerald-200 font-mono">
-                          Registrado
-                        </span>
+                      <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                        {s.fecha || 'Reciente'}
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
+                        {s.cliente || 'Consumidor Final'}
+                      </td>
+                      <td className="py-3.5 px-4 min-w-[200px]">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-semibold text-slate-900 text-xs line-clamp-2" title={resumen}>
+                            {resumen}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-slate-500">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            {cantTotal} {cantTotal === 1 ? 'unidad vendida' : 'unidades vendidas'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono font-extrabold text-slate-950 text-sm whitespace-nowrap">
+                        ${total.toFixed(2)}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono font-bold text-emerald-800 whitespace-nowrap">
+                        Bs. {totalBsFormatted}
+                      </td>
+                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setViewingSale(s)}
+                          className="px-2.5 py-1 text-slate-600 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 border border-slate-200 rounded-xl transition-all font-semibold flex items-center gap-1 ml-auto cursor-pointer"
+                          title="Ver detalle del ticket de venta"
+                        >
+                          <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Ver Ticket</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -437,6 +480,100 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
           </div>
         )}
       </div>
+
+      {/* Modal Ver Detalle del Ticket */}
+      {viewingSale && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full relative shadow-2xl text-xs space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
+                  <Receipt className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">
+                    Comprobante de Venta #{viewingSale.id ? String(viewingSale.id).padStart(4, '0') : (viewingSale.uuid ? viewingSale.uuid.substring(0, 8) : '')}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">{viewingSale.fecha || 'Venta Registrada'}</p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setViewingSale(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-semibold">Cliente:</span>
+                <span className="font-extrabold text-slate-900">{viewingSale.cliente || 'Consumidor Final'}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-semibold">Fecha:</span>
+                <span className="font-mono text-slate-700">{viewingSale.fecha}</span>
+              </div>
+            </div>
+
+            {/* Desglose de Productos Vendidos */}
+            <div className="space-y-2">
+              <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-blue-600" />
+                <span>Productos en este Ticket:</span>
+              </h4>
+
+              <div className="border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-white overflow-hidden">
+                {Array.isArray(viewingSale.detalles) && viewingSale.detalles.length > 0 ? (
+                  viewingSale.detalles.map((d, idx) => (
+                    <div key={d.id || idx} className="p-3 flex items-center justify-between gap-3 text-xs">
+                      <div className="min-w-0 flex-1">
+                        <span className="font-bold text-slate-900 block truncate">{d.producto}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {d.cantidad} uds × ${Number(d.precio).toFixed(2)}
+                        </span>
+                      </div>
+                      <span className="font-mono font-extrabold text-slate-900 text-sm">
+                        ${Number(d.total).toFixed(2)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-slate-500">
+                    <p className="font-semibold text-xs">{viewingSale.productos_resumen || 'Venta Mostrador'}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Venta procesada en caja</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Totales */}
+            <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-1 font-mono">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-emerald-950 font-sans">Total en Dólares (USD):</span>
+                <strong className="text-base text-emerald-950 font-extrabold">
+                  ${Number(viewingSale.total ?? viewingSale.total_usd ?? 0).toFixed(2)}
+                </strong>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-emerald-200/60">
+                <span className="text-emerald-800 font-semibold font-sans">Total en Bolívares (BCV):</span>
+                <strong className="text-emerald-900 font-bold">
+                  Bs. {Number(viewingSale.total_bs || (Number(viewingSale.total || 0) * bcvRate)).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setViewingSale(null)}
+              className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors cursor-pointer"
+            >
+              Cerrar Comprobante
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal Registrar Venta con Select de Productos e Inventario */}
       {showNewSaleModal && (
