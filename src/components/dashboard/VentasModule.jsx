@@ -298,8 +298,12 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
             const currentStock = Number(matchProd.cantidad) || 0;
             const newStock = Math.max(0, currentStock - item.cantidad);
             try {
-              const targetId = matchProd.uuid || matchProd.id;
-              await api.productos.update(targetId, { cantidad: newStock });
+              // Preferir ID numérico directo o UUID
+              const targetId = matchProd.id || matchProd.uuid;
+              await api.productos.update(targetId, { 
+                nombre: matchProd.nombre,
+                cantidad: newStock 
+              });
             } catch (eStockUp) {
               console.warn('Actualización complementaria de stock:', eStockUp.message);
             }
@@ -319,6 +323,11 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
       // Recargar ventas y productos para ver el stock actualizado
       await fetchSales();
       await fetchAvailableProducts();
+
+      // Notificar a toda la aplicación para refrescar inventario y reportes en tiempo real
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('optimus:inventory_updated'));
+      }
     } catch (err) {
       setModalError(err.message || 'No se pudo registrar la venta en la base de datos.');
     } finally {
