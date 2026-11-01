@@ -150,7 +150,7 @@ export default function DashboardLayout({ user, onUpdateUser, onLogout }) {
           {currentModule === 'compras' && <ComprasModule bcvRate={bcvRate} />}
           {currentModule === 'productos' && <ProductosModule bcvRate={bcvRate} />}
           {currentModule === 'categorias' && <CategoriasModule />}
-          {currentModule === 'inventario' && <InventarioModule />}
+          {currentModule === 'inventario' && <InventarioModule bcvRate={bcvRate} />}
           {currentModule === 'reportes' && <ReportesModule bcvRate={bcvRate} />}
           {currentModule === 'clientes' && <ClientesModule bcvRate={bcvRate} usdtRate={rates.usdt} />}
           {currentModule === 'proveedores' && <ProveedoresModule bcvRate={bcvRate} />}

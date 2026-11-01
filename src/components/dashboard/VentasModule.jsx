@@ -276,6 +276,27 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
         }))
       });
 
+      // Descontar inventario de forma inmediata y directa en los productos de la BD
+      for (const item of finalItems) {
+        if (item.cantidad > 0) {
+          const matchProd = availableProducts.find(p => 
+            (item.producto_uuid && p.uuid === item.producto_uuid) ||
+            (item.producto_id && p.id === item.producto_id) ||
+            (p.nombre && p.nombre.toLowerCase() === item.producto.toLowerCase())
+          );
+          if (matchProd) {
+            const currentStock = Number(matchProd.cantidad) || 0;
+            const newStock = Math.max(0, currentStock - item.cantidad);
+            try {
+              const targetId = matchProd.uuid || matchProd.id;
+              await api.productos.update(targetId, { cantidad: newStock });
+            } catch (eStockUp) {
+              console.warn('Actualización complementaria de stock:', eStockUp.message);
+            }
+          }
+        }
+      }
+
       setShowNewSaleModal(false);
       setNewClient('Consumidor Final');
       setSaleItems([]);
@@ -455,26 +476,34 @@ export default function VentasModule({ bcvRate = 884.75, onOpenCalculator }) {
 
             <form onSubmit={handleCreateSale} className="space-y-4">
               
-              {/* Cliente */}
+              {/* Cliente (Select dinámico desde la Base de Datos) */}
               <div>
-                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Cliente:</span>
-                </label>
-                <input
-                  type="text"
-                  list="clients-datalist-sale"
-                  placeholder="Ej. Consumidor Final, Pedro Pérez..."
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-700 font-bold flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Cliente (de tu Base de Datos):</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {availableClients.length} clientes en tu BD
+                  </span>
+                </div>
+                <select
                   value={newClient}
                   onChange={(e) => setNewClient(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs"
-                />
-                <datalist id="clients-datalist-sale">
-                  <option value="Consumidor Final" />
-                  {availableClients.map((c) => (
-                    <option key={c.uuid || c.id} value={c.nombre || c.name} />
-                  ))}
-                </datalist>
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs cursor-pointer"
+                >
+                  <option value="Consumidor Final">Consumidor Final (Venta Mostrador)</option>
+                  {availableClients.map((c) => {
+                    const cName = c.nombre || c.name;
+                    const cTel = c.telefono ? ` • Tel: ${c.telefono}` : '';
+                    const cZona = c.zona ? ` (${c.zona})` : '';
+                    return (
+                      <option key={c.uuid || c.id} value={cName}>
+                        {cName}{cTel}{cZona}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
 
               {/* Selector de Producto desde la Base de Datos */}
